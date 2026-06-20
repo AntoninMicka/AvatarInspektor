@@ -1,0 +1,401 @@
+📷 Profile Photo Analyzer – ToDo
+1. Návrh projektu
+
+
+ Vybrat název projektu
+
+
+ Profile Photo Analyzer
+
+
+ Photo Authenticity Inspector
+
+
+ Avatar Inspector
+
+
+
+
+ Definovat cíl projektu
+
+
+ Nehodnotit osoby ani profily
+
+
+ Hodnotit pouze technické vlastnosti fotografií
+
+
+ Poskytovat transparentní zdůvodnění výsledku
+
+
+
+
+
+2. Browser Extension základ
+
+
+ Vytvořit Manifest V3
+
+
+ Ověřit kompatibilitu Chrome
+
+
+ Ověřit kompatibilitu Firefox
+
+
+ Připravit build systém
+
+
+ Připravit GitHub repozitář
+
+
+Struktura
+
+
+ manifest.json
+
+
+ background.js
+
+
+ content.js
+
+
+ popup.html
+
+
+ popup.js
+
+
+ rules.json
+
+
+
+3. Integrace EXIF parseru
+
+
+ Vyhodnotit knihovnu exifr
+
+
+ Načtení EXIF z obrázku
+
+
+ Načtení IPTC dat
+
+
+ Načtení XMP dat
+
+
+ Ošetření chybějících metadat
+
+
+
+4. Detekce zdroje obrázku
+Facebook
+
+
+ Detekce FBMD tagu
+
+
+ Detekce facebookového názvu souboru
+
+
+ Detekce fbcdn.net URL
+
+
+Instagram
+
+
+ Detekce instagram CDN
+
+
+ Detekce typických thumbnail rozměrů
+
+
+Messenger
+
+
+ Detekce messenger exportů
+
+
+Pinterest
+
+
+ Detekce pinimg.com
+
+
+ Detekce pinterest metadat
+
+
+Redbubble
+
+
+ Detekce redbubble URL
+
+
+ Detekce Redbubble copyright tagů
+
+
+ Detekce typických náhledových názvů
+
+
+Další služby
+
+
+ Canva
+
+
+ Shutterstock
+
+
+ Adobe Stock
+
+
+ Freepik
+
+
+ GIMP
+
+
+ Photoshop
+
+
+ WhatsApp
+
+
+ Telegram
+
+
+
+5. Analýza obrázku
+Rozlišení
+
+
+ Detekce nízkého rozlišení
+
+
+ Detekce náhledových rozlišení
+
+
+ Detekce avatar rozměrů
+
+
+Poměr stran
+
+
+ Čtvercové avatary
+
+
+ Mobilní screenshoty
+
+
+ Desktop screenshoty
+
+
+Metadata
+
+
+ Autor
+
+
+ Copyright
+
+
+ Software
+
+
+ Camera Model
+
+
+ Date Taken
+
+
+
+6. Scoring Engine
+Pozitivní indikátory
+
+
+ Model telefonu
+
+
+ Datum pořízení
+
+
+ Vysoké rozlišení
+
+
+ Konzistentní metadata
+
+
+Negativní indikátory
+
+
+ Komerční zdroj
+
+
+ Sociální síť
+
+
+ Náhledový obrázek
+
+
+ Cizí copyright
+
+
+ Editační software
+
+
+ Screenshot
+
+
+Konfigurace
+
+
+ Přesunout pravidla do JSON
+
+
+ Možnost ladění vah
+
+
+ Možnost vypínat pravidla
+
+
+
+7. Report
+Verdikty
+
+
+ 🟢 Pravděpodobně originální fotografie
+
+
+ 🟡 Upravená nebo znovu publikovaná fotografie
+
+
+ 🟠 Fotografie vykazuje známky převzetí
+
+
+ 🔴 Fotografie pravděpodobně není původní osobní fotografie
+
+
+Detailní výpis
+
+
+ Zobrazení všech nalezených indikátorů
+
+
+ Vysvětlení každého pravidla
+
+
+ Zobrazení skóre
+
+
+
+8. UI
+
+
+ Kontextové menu „Analyze Image“
+
+
+ Popup s výsledkem
+
+
+ Detailní report
+
+
+ Kopírování reportu do schránky
+
+
+
+9. Testovací sada
+Vzorky
+
+
+ Originální fotky z telefonu
+
+
+ Facebook profilovky
+
+
+ Instagram profilovky
+
+
+ Messenger exporty
+
+
+ Redbubble náhledy
+
+
+ Pinterest obrázky
+
+
+ Stock fotografie
+
+
+ Screenshoty
+
+
+Ověření
+
+
+ Minimalizace false positives
+
+
+ Ověření na reálných profilech
+
+
+ Kontrola konzistence výsledků
+
+
+
+10. Budoucí rozšíření
+
+
+ Export JSON reportu
+
+
+ Export HTML reportu
+
+
+ CLI verze
+
+
+ Lokální dávková analýza adresáře
+
+
+ Integrace s ExifTool pro pokročilý režim
+
+
+
+MVP (víkendová verze)
+
+
+ Manifest V3
+
+
+ Pravé tlačítko → Analyze Image
+
+
+ exifr integrace
+
+
+ Detekce Facebook
+
+
+ Detekce Redbubble
+
+
+ Detekce copyrightu
+
+
+ Detekce rozlišení
+
+
+ Jednoduchý scoring
+
+
+ Popup s reportem
+
+
+To už by po kliknutí na profilovku dokázalo vypsat například:
+🟠 Fotografie vykazuje známky převzetíNalezené indikátory:✓ Facebook recompression✓ Nízké rozlišení✓ Chybí původní EXIF✓ Redbubble copyrightPoznámka:Fotografie nemusí být původním snímkem autora profilu.
+což je přesně ten typ upozornění, který jsi hledal.
