@@ -21,9 +21,9 @@ Stavy:
 
 - [x] Vytvorit Manifest V3
 - [-] Overit kompatibilitu Chrome
-- [ ] Overit kompatibilitu Firefox
+- [x] Overit kompatibilitu Firefox
 - [ ] Pripravit build system
-- [ ] Pripravit GitHub repozitar
+- [x] Pripravit GitHub repozitar
 
 ### Struktura
 - [x] `manifest.json`
@@ -35,11 +35,11 @@ Stavy:
 
 ## 3. Integrace EXIF parseru
 
-- [ ] Vyhodnotit knihovnu `exifr`
-- [ ] Nacteni EXIF z obrazku
-- [ ] Nacteni IPTC dat
-- [ ] Nacteni XMP dat
-- [ ] Osetreni chybejicich metadat
+- [x] Vyhodnotit knihovnu `exifr`
+- [-] Nacteni EXIF z obrazku
+- [-] Nacteni IPTC dat
+- [-] Nacteni XMP dat
+- [-] Osetreni chybejicich metadat
 
 ## 4. Detekce zdroje obrazku
 
@@ -87,11 +87,11 @@ Stavy:
 - [ ] Desktop screenshoty
 
 ### Metadata
-- [ ] Autor
-- [ ] Copyright
-- [ ] Software
-- [ ] Camera Model
-- [ ] Date Taken
+- [-] Autor
+- [-] Copyright
+- [-] Software
+- [-] Camera Model
+- [-] Date Taken
 
 ## 6. Scoring Engine
 
@@ -163,7 +163,7 @@ Stavy:
 
 - [x] Manifest V3
 - [x] Prave tlacitko -> Analyze Image
-- [ ] `exifr` integrace
+- [-] `exifr` integrace
 - [-] Detekce Facebook
 - [-] Detekce Redbubble
 - [ ] Detekce copyrightu

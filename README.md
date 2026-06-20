@@ -2,12 +2,18 @@
 
 Minimalni MVP browser extension pro analyzu obrazku z kontextoveho menu.
 
+## Instalace
+
+1. Spust `npm install`
+2. Pak teprve nacitej extension jako unpacked / temporary addon
+
 ## Co uz umi
 
 - prida polozku `Analyze Image` do praveho tlacitka nad obrazkem
 - nacte URL obrazku a zakladni DOM kontext
 - zkontroluje jednoduche zdrojove indikatory podle `rules.json`
 - vyhodnoti zakladni rozmery obrazku
+- pokusi se nacist EXIF/IPTC/XMP metadata pres `exifr`
 - ulozi posledni analyzu a zobrazi ji v popupu
 
 ## Jak nacist do Chrome

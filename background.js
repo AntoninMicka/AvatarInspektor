@@ -1,4 +1,5 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
+const exifrApi = globalThis.exifr;
 const MENU_ID = "avatar-inspector-analyze-image";
 const STORAGE_KEY = "lastAnalysis";
 
@@ -133,9 +134,13 @@ async function analyzeImage(srcUrl, domContext) {
     });
   }
 
-  if (!imageInfo.metadataAvailable) {
-    warnings.push("EXIF/IPTC/XMP parsing is not wired in yet.");
+  if (!exifrApi?.parse) {
+    warnings.push("EXIF parser is not available in the current background context.");
+  } else if (!imageInfo.metadataAvailable) {
+    warnings.push("No EXIF/IPTC/XMP metadata were found in this image.");
   }
+
+  indicators.push(...buildMetadataIndicators(imageInfo.metadata));
 
   return buildAnalysis({
     srcUrl,
@@ -145,6 +150,7 @@ async function analyzeImage(srcUrl, domContext) {
     metadata: {
       contentType: imageInfo.contentType,
       fileSize: imageInfo.fileSize,
+      imageMetadata: imageInfo.metadata,
       domContext: domContext || null
     }
   });
@@ -159,6 +165,7 @@ async function inspectImage(srcUrl) {
 
     const blob = await response.blob();
     const bitmap = await createImageBitmap(blob);
+    const metadata = await extractMetadata(blob);
 
     return {
       dimensions: {
@@ -167,7 +174,8 @@ async function inspectImage(srcUrl) {
       },
       contentType: blob.type || response.headers.get("content-type") || "unknown",
       fileSize: blob.size,
-      metadataAvailable: false
+      metadataAvailable: Boolean(metadata),
+      metadata
     };
   } catch (error) {
     return {
@@ -175,8 +183,37 @@ async function inspectImage(srcUrl) {
       contentType: null,
       fileSize: null,
       metadataAvailable: false,
+      metadata: null,
       error: `Image fetch failed: ${error.message}`
     };
+  }
+}
+
+async function extractMetadata(blob) {
+  if (!exifrApi?.parse) {
+    return null;
+  }
+
+  try {
+    const parsed = await exifrApi.parse(blob, true);
+    if (!parsed || Object.keys(parsed).length === 0) {
+      return null;
+    }
+
+    return {
+      author: parsed.Artist || parsed.Creator || parsed.XPAuthor || null,
+      copyright: parsed.Copyright || parsed.Rights || null,
+      software: parsed.Software || parsed.ProcessingSoftware || null,
+      cameraMake: parsed.Make || null,
+      cameraModel: parsed.Model || null,
+      lensModel: parsed.LensModel || null,
+      dateTaken: normalizeDate(parsed.DateTimeOriginal || parsed.CreateDate || parsed.ModifyDate),
+      latitude: typeof parsed.latitude === "number" ? parsed.latitude : null,
+      longitude: typeof parsed.longitude === "number" ? parsed.longitude : null,
+      rawTagCount: Object.keys(parsed).length
+    };
+  } catch (_error) {
+    return null;
   }
 }
 
@@ -261,6 +298,72 @@ function getDefaultWeight(severity) {
   }
 
   return 0;
+}
+
+function buildMetadataIndicators(metadata) {
+  if (!metadata) {
+    return [];
+  }
+
+  const indicators = [];
+
+  if (metadata.cameraModel || metadata.cameraMake) {
+    indicators.push({
+      key: "camera_model_present",
+      label: "Camera metadata present",
+      severity: "positive",
+      weight: 1,
+      reason: `${metadata.cameraMake || ""} ${metadata.cameraModel || ""}`.trim()
+    });
+  }
+
+  if (metadata.dateTaken) {
+    indicators.push({
+      key: "date_taken_present",
+      label: "Capture date present",
+      severity: "positive",
+      weight: 0.5,
+      reason: metadata.dateTaken
+    });
+  }
+
+  if (metadata.software) {
+    indicators.push({
+      key: "editing_software_present",
+      label: "Software tag present",
+      severity: "negative",
+      weight: 0.75,
+      reason: metadata.software
+    });
+  }
+
+  if (metadata.copyright) {
+    indicators.push({
+      key: "copyright_present",
+      label: "Copyright metadata present",
+      severity: "negative",
+      weight: 0.75,
+      reason: metadata.copyright
+    });
+  }
+
+  return indicators;
+}
+
+function normalizeDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return String(value);
 }
 
 async function loadRules() {

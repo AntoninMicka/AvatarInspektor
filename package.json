@@ -1,0 +1,7 @@
+{
+  "name": "avatar-inspector",
+  "private": true,
+  "dependencies": {
+    "exifr": "^7.1.3"
+  }
+}

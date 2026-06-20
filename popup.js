@@ -8,6 +8,7 @@ const dimensions = document.getElementById("dimensions");
 const score = document.getElementById("score");
 const sourceHost = document.getElementById("sourceHost");
 const indicators = document.getElementById("indicators");
+const metadata = document.getElementById("metadata");
 const warnings = document.getElementById("warnings");
 
 initialize().catch((error) => {
@@ -54,6 +55,12 @@ function renderAnalysis(analysis) {
     indicators,
     analysis.indicators,
     (indicator) => `${indicator.label}: ${indicator.reason}`
+  );
+
+  renderList(
+    metadata,
+    formatMetadataEntries(analysis.metadata?.imageMetadata),
+    (entry) => entry
   );
 
   renderList(warnings, analysis.warnings, (warning) => warning);
@@ -106,4 +113,54 @@ function formatScore(value) {
   }
 
   return value.toFixed(1);
+}
+
+function formatMetadataEntries(imageMetadata) {
+  if (!imageMetadata) {
+    return [];
+  }
+
+  const entries = [];
+
+  if (imageMetadata.cameraMake || imageMetadata.cameraModel) {
+    entries.push(
+      `Kamera: ${[imageMetadata.cameraMake, imageMetadata.cameraModel].filter(Boolean).join(" ")}`
+    );
+  }
+
+  if (imageMetadata.lensModel) {
+    entries.push(`Objektiv: ${imageMetadata.lensModel}`);
+  }
+
+  if (imageMetadata.software) {
+    entries.push(`Software: ${imageMetadata.software}`);
+  }
+
+  if (imageMetadata.author) {
+    entries.push(`Autor: ${imageMetadata.author}`);
+  }
+
+  if (imageMetadata.copyright) {
+    entries.push(`Copyright: ${imageMetadata.copyright}`);
+  }
+
+  if (imageMetadata.dateTaken) {
+    entries.push(`Datum: ${formatMetadataDate(imageMetadata.dateTaken)}`);
+  }
+
+  if (imageMetadata.latitude !== null && imageMetadata.longitude !== null) {
+    entries.push(`GPS: ${imageMetadata.latitude.toFixed(5)}, ${imageMetadata.longitude.toFixed(5)}`);
+  }
+
+  entries.push(`Tagu: ${imageMetadata.rawTagCount}`);
+  return entries;
+}
+
+function formatMetadataDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("cs-CZ");
 }

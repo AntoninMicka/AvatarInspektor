@@ -13,9 +13,10 @@
   ],
   "background": {
     "scripts": [
+      "node_modules/exifr/dist/full.umd.js",
       "background.js"
     ],
-    "service_worker": "background.js"
+    "service_worker": "background-worker.js"
   },
   "action": {
     "default_title": "Avatar Inspector",
