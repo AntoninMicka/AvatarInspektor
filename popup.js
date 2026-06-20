@@ -4,6 +4,7 @@ const emptyState = document.getElementById("emptyState");
 const profileView = document.getElementById("profileView");
 const unsupportedState = document.getElementById("unsupportedState");
 const platformBadge = document.getElementById("platformBadge");
+const resultBadge = document.getElementById("resultBadge");
 const profileName = document.getElementById("profileName");
 const profileId = document.getElementById("profileId");
 const profileSummary = document.getElementById("profileSummary");
@@ -130,6 +131,7 @@ function renderProfile(profile) {
   profileView.hidden = false;
 
   platformBadge.textContent = profile.platform;
+  renderResultBadge(profile.photoAnalysis?.verdict);
   profileName.textContent = profile.profileName || "Neznamy profil";
   profileId.textContent = profile.profileId || "unknown";
   profileSummary.textContent = buildProfileSummary(profile);
@@ -231,6 +233,40 @@ function buildProfileSummary(profile) {
   const manualFlags = Object.values(profile.manualChecks || {}).filter(Boolean).length;
   const automaticFlags = Object.values(profile.automaticChecks || {}).filter(Boolean).length;
   return `${manualFlags} manualnich zaznamu, ${automaticFlags} automatickych indikatoru.`;
+}
+
+function renderResultBadge(verdict) {
+  const config = getResultBadgeConfig(verdict);
+  resultBadge.textContent = config.label;
+  resultBadge.dataset.tone = config.tone;
+}
+
+function getResultBadgeConfig(verdict) {
+  if (verdict === "Bez zjevnych problemu") {
+    return {
+      label: "Vysledek: OK",
+      tone: "ok"
+    };
+  }
+
+  if (verdict === "Vyzaduje pozornost") {
+    return {
+      label: "Vysledek: Pozor",
+      tone: "warn"
+    };
+  }
+
+  if (verdict === "Vyrazne nesrovnalosti") {
+    return {
+      label: "Vysledek: Riziko",
+      tone: "danger"
+    };
+  }
+
+  return {
+    label: "Bez vysledku",
+    tone: "neutral"
+  };
 }
 
 function formatUrl(value) {

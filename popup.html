@@ -76,6 +76,13 @@
         gap: 10px;
       }
 
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
       .platform {
         display: inline-flex;
         width: fit-content;
@@ -86,6 +93,36 @@
         font-size: 12px;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+      }
+
+      .result-pill {
+        display: inline-flex;
+        width: fit-content;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(107, 114, 128, 0.2);
+        background: rgba(107, 114, 128, 0.12);
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+      }
+
+      .result-pill[data-tone="ok"] {
+        background: rgba(15, 118, 110, 0.12);
+        border-color: rgba(15, 118, 110, 0.22);
+        color: var(--ok);
+      }
+
+      .result-pill[data-tone="warn"] {
+        background: rgba(180, 83, 9, 0.12);
+        border-color: rgba(180, 83, 9, 0.24);
+        color: #b45309;
+      }
+
+      .result-pill[data-tone="danger"] {
+        background: rgba(185, 28, 28, 0.12);
+        border-color: rgba(185, 28, 28, 0.22);
+        color: var(--warn);
       }
 
       .status {
@@ -186,7 +223,10 @@
     <main>
       <div class="card">
         <section class="hero">
-          <span id="platformBadge" class="platform">generic</span>
+          <div class="hero-meta">
+            <span id="platformBadge" class="platform">generic</span>
+            <span id="resultBadge" class="result-pill" data-tone="neutral">Bez vysledku</span>
+          </div>
           <div>
             <h1 id="profileName">Avatar Inspector</h1>
             <p id="profileId" class="subtle">unknown</p>
