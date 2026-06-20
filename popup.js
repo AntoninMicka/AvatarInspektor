@@ -1,3 +1,4 @@
+const extensionApi = globalThis.browser ?? globalThis.chrome;
 const emptyState = document.getElementById("emptyState");
 const report = document.getElementById("report");
 const verdict = document.getElementById("verdict");
@@ -14,7 +15,7 @@ initialize().catch((error) => {
   emptyState.textContent = `Nepodarilo se nacist analyzu: ${error.message}`;
 });
 
-chrome.storage.onChanged.addListener((changes, areaName) => {
+extensionApi.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local" || !changes.lastAnalysis?.newValue) {
     return;
   }
@@ -23,7 +24,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 async function initialize() {
-  const analysis = await chrome.runtime.sendMessage({
+  const analysis = await extensionApi.runtime.sendMessage({
     type: "avatar-inspector:get-last-analysis"
   });
 
@@ -44,7 +45,9 @@ function renderAnalysis(analysis) {
   analyzedAt.textContent = formatAnalyzedAt(analysis.analyzedAt);
   summary.textContent = analysis.summary || "";
   dimensions.textContent = formatDimensions(analysis.dimensions);
-  score.textContent = `${analysis.score} (${analysis.scoring.positive}+ / ${analysis.scoring.negative}-)`;
+  score.textContent =
+    `${formatScore(analysis.score)} ` +
+    `(${formatScore(analysis.scoring.positiveWeight)}+ / ${formatScore(analysis.scoring.negativeWeight)}-)`;
   sourceHost.textContent = formatSourceHost(analysis.srcUrl);
 
   renderList(
@@ -95,4 +98,12 @@ function formatAnalyzedAt(value) {
   }
 
   return `Analyzovano ${new Date(value).toLocaleString("cs-CZ")}`;
+}
+
+function formatScore(value) {
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+
+  return value.toFixed(1);
 }

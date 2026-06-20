@@ -1,27 +1,28 @@
+const extensionApi = globalThis.browser ?? globalThis.chrome;
 const MENU_ID = "avatar-inspector-analyze-image";
 const STORAGE_KEY = "lastAnalysis";
 
 let cachedRules = null;
 
-chrome.runtime.onInstalled.addListener(async () => {
+extensionApi.runtime.onInstalled.addListener(async () => {
   await ensureContextMenu();
-  await chrome.action.setBadgeText({ text: "" });
+  await extensionApi.action.setBadgeText({ text: "" });
 });
 
-chrome.runtime.onStartup.addListener(async () => {
+extensionApi.runtime.onStartup.addListener(async () => {
   await ensureContextMenu();
 });
 
 async function ensureContextMenu() {
-  await chrome.contextMenus.removeAll();
-  chrome.contextMenus.create({
+  await extensionApi.contextMenus.removeAll();
+  extensionApi.contextMenus.create({
     id: MENU_ID,
     title: "Analyze Image",
     contexts: ["image"]
   });
 }
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+extensionApi.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) {
     return;
   }
@@ -29,7 +30,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const domContext = tab?.id ? await getImageContextFromTab(tab.id) : null;
   const analysis = await analyzeImage(info.srcUrl, domContext);
 
-  await chrome.storage.local.set({
+  await extensionApi.storage.local.set({
     [STORAGE_KEY]: {
       ...analysis,
       analyzedAt: new Date().toISOString(),
@@ -38,11 +39,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   });
 
   await updateBadge(analysis.verdict);
+  await openResultsView();
 });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "avatar-inspector:get-last-analysis") {
-    chrome.storage.local.get(STORAGE_KEY).then((result) => {
+    extensionApi.storage.local.get(STORAGE_KEY).then((result) => {
       sendResponse(result[STORAGE_KEY] || null);
     });
     return true;
@@ -53,7 +55,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 async function getImageContextFromTab(tabId) {
   try {
-    return await chrome.tabs.sendMessage(tabId, {
+    return await extensionApi.tabs.sendMessage(tabId, {
       type: "avatar-inspector:get-last-image-context"
     });
   } catch (_error) {
@@ -93,6 +95,7 @@ async function analyzeImage(srcUrl, domContext) {
         key: "low_resolution",
         label: "Low resolution",
         severity: "negative",
+        weight: 1,
         reason: `Short edge is ${Math.min(width, height)} px.`
       });
     }
@@ -102,6 +105,7 @@ async function analyzeImage(srcUrl, domContext) {
         key: "square_avatar",
         label: "Square avatar-like crop",
         severity: "neutral",
+        weight: 0,
         reason: `Dimensions ${width}x${height} resemble a profile image crop.`
       });
     }
@@ -114,6 +118,7 @@ async function analyzeImage(srcUrl, domContext) {
       key: "dom_alt_text",
       label: "DOM context captured",
       severity: "positive",
+      "weight": 0.5,
       reason: `Found alt text: "${truncate(domContext.alt, 80)}".`
     });
   }
@@ -123,6 +128,7 @@ async function analyzeImage(srcUrl, domContext) {
       key: "dom_title_text",
       label: "Image title captured",
       severity: "neutral",
+      "weight": 0,
       reason: `Found title attribute: "${truncate(domContext.title, 80)}".`
     });
   }
@@ -186,6 +192,7 @@ function matchSourceRules(url, sourceRules) {
         key: sourceRule.key,
         label: sourceRule.label,
         severity: sourceRule.severity,
+        weight: sourceRule.weight ?? getDefaultWeight(sourceRule.severity),
         reason: sourceRule.reason
       });
     }
@@ -197,29 +204,35 @@ function matchSourceRules(url, sourceRules) {
 function buildAnalysis({ srcUrl, indicators, warnings, dimensions, metadata }) {
   const scoring = indicators.reduce(
     (accumulator, indicator) => {
+      const weight = indicator.weight ?? getDefaultWeight(indicator.severity);
+
       if (indicator.severity === "negative") {
         accumulator.negative += 1;
+        accumulator.negativeWeight += weight;
       } else if (indicator.severity === "positive") {
         accumulator.positive += 1;
+        accumulator.positiveWeight += weight;
       } else {
         accumulator.neutral += 1;
       }
       return accumulator;
     },
-    { positive: 0, negative: 0, neutral: 0 }
+    { positive: 0, negative: 0, neutral: 0, positiveWeight: 0, negativeWeight: 0 }
   );
 
   let verdict = "Likely original photo";
-  if (scoring.negative >= 3) {
+  const finalScore = scoring.positiveWeight - scoring.negativeWeight;
+
+  if (scoring.negativeWeight >= 3) {
     verdict = "Likely reused or republished photo";
-  } else if (scoring.negative >= 1) {
+  } else if (scoring.negativeWeight >= 1) {
     verdict = "Mixed signals";
   }
 
   return {
     srcUrl,
     verdict,
-    score: scoring.positive - scoring.negative,
+    score: finalScore,
     scoring,
     dimensions,
     indicators,
@@ -242,12 +255,20 @@ function buildSummary(indicators, warnings) {
   return warnings[0];
 }
 
+function getDefaultWeight(severity) {
+  if (severity === "positive" || severity === "negative") {
+    return 1;
+  }
+
+  return 0;
+}
+
 async function loadRules() {
   if (cachedRules) {
     return cachedRules;
   }
 
-  const response = await fetch(chrome.runtime.getURL("rules.json"));
+  const response = await fetch(extensionApi.runtime.getURL("rules.json"));
   cachedRules = await response.json();
   return cachedRules;
 }
@@ -264,8 +285,23 @@ async function updateBadge(verdict) {
     color = "#b7791f";
   }
 
-  await chrome.action.setBadgeText({ text });
-  await chrome.action.setBadgeBackgroundColor({ color });
+  await extensionApi.action.setBadgeText({ text });
+  await extensionApi.action.setBadgeBackgroundColor({ color });
+}
+
+async function openResultsView() {
+  if (typeof extensionApi.action.openPopup === "function") {
+    try {
+      await extensionApi.action.openPopup();
+      return;
+    } catch (_error) {
+      // Firefox may refuse popup opening in some extension contexts.
+    }
+  }
+
+  await extensionApi.tabs.create({
+    url: extensionApi.runtime.getURL("popup.html")
+  });
 }
 
 function truncate(value, maxLength) {

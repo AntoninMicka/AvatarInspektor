@@ -1,3 +1,4 @@
+const extensionApi = globalThis.browser ?? globalThis.chrome;
 let lastImageContext = null;
 
 document.addEventListener(
@@ -22,7 +23,7 @@ document.addEventListener(
   true
 );
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "avatar-inspector:get-last-image-context") {
     sendResponse(lastImageContext);
     return true;
