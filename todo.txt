@@ -1,5 +1,10 @@
 # Profile Photo Analyzer - ToDo
 
+Stavy:
+- [x] hotovo
+- [-] rozpracovano / MVP verze
+- [ ] ceka
+
 ## 1. Navrh projektu
 
 ### Vybrat nazev projektu
@@ -15,7 +20,7 @@
 ## 2. Browser Extension zaklad
 
 - [x] Vytvorit Manifest V3
-- [ ] Overit kompatibilitu Chrome
+- [-] Overit kompatibilitu Chrome
 - [ ] Overit kompatibilitu Firefox
 - [ ] Pripravit build system
 - [ ] Pripravit GitHub repozitar
@@ -44,18 +49,18 @@
 - [x] Detekce `fbcdn.net` URL
 
 ### Instagram
-- [x] Detekce Instagram CDN
+- [-] Detekce Instagram CDN
 - [ ] Detekce typickych thumbnail rozmeru
 
 ### Messenger
 - [ ] Detekce messenger exportu
 
 ### Pinterest
-- [x] Detekce `pinimg.com`
+- [-] Detekce `pinimg.com`
 - [ ] Detekce Pinterest metadat
 
 ### Redbubble
-- [x] Detekce Redbubble URL
+- [-] Detekce Redbubble URL
 - [ ] Detekce Redbubble copyright tagu
 - [ ] Detekce typickych nahledovych nazvu
 
@@ -74,10 +79,10 @@
 ### Rozliseni
 - [x] Detekce nizkeho rozliseni
 - [ ] Detekce nahledovych rozliseni
-- [x] Detekce avatar rozmeru
+- [-] Detekce avatar rozmeru
 
 ### Pomer stran
-- [x] Ctvercove avatary
+- [-] Ctvercove avatary
 - [ ] Mobilni screenshoty
 - [ ] Desktop screenshoty
 
@@ -94,11 +99,11 @@
 - [ ] Model telefonu
 - [ ] Datum porizeni
 - [ ] Vysoke rozliseni
-- [x] Konzistentni metadata
+- [-] Konzistentni metadata
 
 ### Negativni indikatory
 - [ ] Komercni zdroj
-- [x] Socialni sit
+- [-] Socialni sit
 - [ ] Nahledovy obrazek
 - [ ] Cizi copyright
 - [ ] Editacni software
@@ -113,20 +118,20 @@
 
 ### Verdikty
 - [x] 🟢 Pravdepodobne originalni fotografie
-- [x] 🟡 Upravena nebo znovu publikovana fotografie
-- [x] 🟠 Fotografie vykazuje znamky prevzeti
+- [-] 🟡 Upravena nebo znovu publikovana fotografie
+- [-] 🟠 Fotografie vykazuje znamky prevzeti
 - [ ] 🔴 Fotografie pravdepodobne neni puvodni osobni fotografie
 
 ### Detailni vypis
 - [x] Zobrazeni vsech nalezenych indikatoru
-- [ ] Vysvetleni kazdeho pravidla
-- [x] Zobrazeni skore
+- [-] Vysvetleni kazdeho pravidla
+- [-] Zobrazeni skore
 
 ## 8. UI
 
 - [x] Kontextove menu "Analyze Image"
 - [x] Popup s vysledkem
-- [x] Detailni report
+- [-] Detailni report
 - [ ] Kopirovani reportu do schranky
 
 ## 9. Testovaci sada
@@ -159,11 +164,11 @@
 - [x] Manifest V3
 - [x] Prave tlacitko -> Analyze Image
 - [ ] `exifr` integrace
-- [x] Detekce Facebook
-- [x] Detekce Redbubble
+- [-] Detekce Facebook
+- [-] Detekce Redbubble
 - [ ] Detekce copyrightu
 - [x] Detekce rozliseni
-- [x] Jednoduchy scoring
+- [-] Jednoduchy scoring
 - [x] Popup s reportem
 
 ### Ukazka vystupu

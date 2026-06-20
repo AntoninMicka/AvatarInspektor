@@ -4,13 +4,22 @@ const STORAGE_KEY = "lastAnalysis";
 let cachedRules = null;
 
 chrome.runtime.onInstalled.addListener(async () => {
+  await ensureContextMenu();
+  await chrome.action.setBadgeText({ text: "" });
+});
+
+chrome.runtime.onStartup.addListener(async () => {
+  await ensureContextMenu();
+});
+
+async function ensureContextMenu() {
   await chrome.contextMenus.removeAll();
   chrome.contextMenus.create({
     id: MENU_ID,
     title: "Analyze Image",
     contexts: ["image"]
   });
-});
+}
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) {
@@ -106,6 +115,15 @@ async function analyzeImage(srcUrl, domContext) {
       label: "DOM context captured",
       severity: "positive",
       reason: `Found alt text: "${truncate(domContext.alt, 80)}".`
+    });
+  }
+
+  if (domContext?.title) {
+    indicators.push({
+      key: "dom_title_text",
+      label: "Image title captured",
+      severity: "neutral",
+      reason: `Found title attribute: "${truncate(domContext.title, 80)}".`
     });
   }
 
@@ -206,8 +224,22 @@ function buildAnalysis({ srcUrl, indicators, warnings, dimensions, metadata }) {
     dimensions,
     indicators,
     warnings,
-    metadata
+    metadata,
+    summary: buildSummary(indicators, warnings)
   };
+}
+
+function buildSummary(indicators, warnings) {
+  if (indicators.length === 0 && warnings.length === 0) {
+    return "No strong signs were found yet.";
+  }
+
+  const topIndicator = indicators[0];
+  if (topIndicator) {
+    return `${topIndicator.label}: ${topIndicator.reason}`;
+  }
+
+  return warnings[0];
 }
 
 async function loadRules() {

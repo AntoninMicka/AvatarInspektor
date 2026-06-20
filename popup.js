@@ -2,6 +2,7 @@ const emptyState = document.getElementById("emptyState");
 const report = document.getElementById("report");
 const verdict = document.getElementById("verdict");
 const analyzedAt = document.getElementById("analyzedAt");
+const summary = document.getElementById("summary");
 const dimensions = document.getElementById("dimensions");
 const score = document.getElementById("score");
 const sourceHost = document.getElementById("sourceHost");
@@ -10,7 +11,15 @@ const warnings = document.getElementById("warnings");
 
 initialize().catch((error) => {
   emptyState.hidden = false;
-  emptyState.textContent = `Failed to load analysis: ${error.message}`;
+  emptyState.textContent = `Nepodarilo se nacist analyzu: ${error.message}`;
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local" || !changes.lastAnalysis?.newValue) {
+    return;
+  }
+
+  renderAnalysis(changes.lastAnalysis.newValue);
 });
 
 async function initialize() {
@@ -24,11 +33,16 @@ async function initialize() {
     return;
   }
 
+  renderAnalysis(analysis);
+}
+
+function renderAnalysis(analysis) {
   emptyState.hidden = true;
   report.hidden = false;
 
   verdict.textContent = analysis.verdict;
   analyzedAt.textContent = formatAnalyzedAt(analysis.analyzedAt);
+  summary.textContent = analysis.summary || "";
   dimensions.textContent = formatDimensions(analysis.dimensions);
   score.textContent = `${analysis.score} (${analysis.scoring.positive}+ / ${analysis.scoring.negative}-)`;
   sourceHost.textContent = formatSourceHost(analysis.srcUrl);
@@ -47,7 +61,7 @@ function renderList(container, items, formatItem) {
 
   if (!items || items.length === 0) {
     const item = document.createElement("li");
-    item.textContent = "None";
+    item.textContent = "Zadne";
     container.appendChild(item);
     return;
   }
@@ -61,7 +75,7 @@ function renderList(container, items, formatItem) {
 
 function formatDimensions(value) {
   if (!value) {
-    return "Unavailable";
+    return "Nedostupne";
   }
 
   return `${value.width} x ${value.height}`;
@@ -71,14 +85,14 @@ function formatSourceHost(srcUrl) {
   try {
     return new URL(srcUrl).hostname;
   } catch (_error) {
-    return "Unknown";
+    return "Neznamy";
   }
 }
 
 function formatAnalyzedAt(value) {
   if (!value) {
-    return "Analysis time unavailable";
+    return "Cas analyzy neni k dispozici";
   }
 
-  return `Analyzed ${new Date(value).toLocaleString()}`;
+  return `Analyzovano ${new Date(value).toLocaleString("cs-CZ")}`;
 }

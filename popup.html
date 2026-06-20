@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="cs">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -103,40 +103,41 @@
     <main>
       <div class="card">
         <h1>Avatar Inspector</h1>
-        <p class="subtle">Analyze an image via right click -> Analyze Image.</p>
+        <p class="subtle">Analyza obrazku pres prave tlacitko -> Analyze Image.</p>
 
         <section id="emptyState" class="empty">
-          <p>No analysis yet.</p>
+          <p>Zatim neni k dispozici zadna analyza.</p>
         </section>
 
         <section id="report" hidden>
           <div class="verdict">
-            <h2 id="verdict">Waiting for analysis</h2>
+            <h2 id="verdict">Cekam na analyzu</h2>
             <p id="analyzedAt" class="subtle"></p>
+            <p id="summary" class="subtle"></p>
           </div>
 
           <div class="meta">
             <div class="meta-row">
-              <span>Dimensions</span>
+              <span>Rozmery</span>
               <strong id="dimensions">-</strong>
             </div>
             <div class="meta-row">
-              <span>Score</span>
+              <span>Skore</span>
               <strong id="score">-</strong>
             </div>
             <div class="meta-row">
-              <span>Source</span>
+              <span>Zdroj</span>
               <strong id="sourceHost">-</strong>
             </div>
           </div>
 
           <div class="list">
-            <h2>Indicators</h2>
+            <h2>Indikatory</h2>
             <ul id="indicators"></ul>
           </div>
 
           <div class="list">
-            <h2>Warnings</h2>
+            <h2>Upozorneni</h2>
             <ul id="warnings"></ul>
           </div>
         </section>
