@@ -1,20 +1,30 @@
 # Avatar Inspector
 
-Minimalni MVP browser extension pro analyzu obrazku z kontextoveho menu.
+Browser extension MVP, ktery funguje jako lokalni profilovy checklist duveryhodnosti.
+
+Misto jednorazoveho verdiktu nad jednou fotkou si pro kazdy rozpoznany profil uklada:
+
+- platformu a identitu profilu
+- manualni checklist identity a chovani
+- socialni signaly zachycene na strance
+- poznamky psane uzivatelem
+- vysledek analyzy profilove fotky
+
+Vsechno zustava pouze lokalne v ulozisti rozsireni.
+
+## Aktualni MVP
+
+- rozpozna zakladni profilove stranky pro `facebook`, `instagram`, `discord`, `telegram`, `reddit`
+- zalozi lokalni zaznam profilu v `storage.local`
+- umozni rucne zatrhavat checklist identity, socialnich signalu a chovani
+- umi ulozit volnou poznamku k profilu
+- umi analyzovat profilovou fotku a pridat automaticke indikatory
+- zachova puvodni kontextove menu `Analyze Image` pro rucni analyzu libovolneho obrazku
 
 ## Instalace
 
 1. Spust `npm install`
-2. Pak teprve nacitej extension jako unpacked / temporary addon
-
-## Co uz umi
-
-- prida polozku `Analyze Image` do praveho tlacitka nad obrazkem
-- nacte URL obrazku a zakladni DOM kontext
-- zkontroluje jednoduche zdrojove indikatory podle `rules.json`
-- vyhodnoti zakladni rozmery obrazku
-- pokusi se nacist EXIF/IPTC/XMP metadata pres `exifr`
-- ulozi posledni analyzu a zobrazi ji v popupu
+2. Nacti extension jako unpacked / temporary addon
 
 ## Jak nacist do Chrome
 
@@ -25,13 +35,14 @@ Minimalni MVP browser extension pro analyzu obrazku z kontextoveho menu.
 
 ## Jak otestovat
 
-1. Otevri stranku s obrazkem
-2. Klikni pravym tlacitkem na obrazek
-3. Zvol `Analyze Image`
-4. Otevri popup rozsireni v liste prohlizece
+1. Otevri podporovanou profilovou stranku
+2. Otevri popup rozsireni
+3. Zkontroluj, ze se nacetl profil a checklist
+4. Klikni na `Analyzovat profilovou fotku`
+5. Pridej poznamku nebo uprav manualni checkboxy
 
 ## Poznamky
 
-- EXIF/IPTC/XMP analyza zatim neni pripojena
-- Firefox kompatibilita zatim neni overena
-- jde o nactitelnou kostru, ne o finalni produkcni verzi
+- uloziste je zatim implementovane pres `storage.local`, ne pres IndexedDB
+- heuristiky detekce profilu jsou zamerne jednoduche a budou potrebovat ladeni po sitich
+- Discord a Facebook maji nejslabsi detekci, protoze struktura DOM se casto meni

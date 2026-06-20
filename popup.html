@@ -8,12 +8,14 @@
       :root {
         color-scheme: light;
         --bg: #f4efe7;
-        --panel: #fffdf9;
-        --line: #d9cdbd;
+        --panel: rgba(255, 252, 247, 0.92);
+        --line: #d8c6b0;
         --text: #1f2933;
         --muted: #6b7280;
-        --accent: #b45309;
-        --accent-soft: #fde6c8;
+        --accent: #9a3412;
+        --accent-soft: #fce7d4;
+        --warn: #b91c1c;
+        --ok: #0f766e;
       }
 
       * {
@@ -22,13 +24,14 @@
 
       body {
         margin: 0;
-        width: 360px;
-        min-height: 420px;
+        width: 420px;
+        min-height: 640px;
         font: 14px/1.5 Georgia, "Times New Roman", serif;
         color: var(--text);
         background:
-          radial-gradient(circle at top left, rgba(180, 83, 9, 0.16), transparent 36%),
-          linear-gradient(180deg, #f8f3ec 0%, var(--bg) 100%);
+          radial-gradient(circle at top left, rgba(154, 52, 18, 0.18), transparent 30%),
+          radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.12), transparent 32%),
+          linear-gradient(180deg, #fbf7f1 0%, var(--bg) 100%);
       }
 
       main {
@@ -38,59 +41,139 @@
       .card {
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 16px;
-        box-shadow: 0 10px 30px rgba(31, 41, 51, 0.08);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 20px 45px rgba(31, 41, 51, 0.08);
+        backdrop-filter: blur(10px);
       }
 
       h1,
       h2,
+      h3,
       p {
         margin: 0;
       }
 
       h1 {
-        font-size: 22px;
-        margin-bottom: 6px;
+        font-size: 24px;
+      }
+
+      h2 {
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+
+      h3 {
+        font-size: 15px;
       }
 
       .subtle {
         color: var(--muted);
       }
 
-      .verdict {
-        margin-top: 14px;
-        padding: 12px;
-        border-radius: 12px;
+      .hero {
+        display: grid;
+        gap: 10px;
+      }
+
+      .platform {
+        display: inline-flex;
+        width: fit-content;
+        padding: 4px 10px;
+        border-radius: 999px;
         background: var(--accent-soft);
-        border: 1px solid rgba(180, 83, 9, 0.18);
+        color: var(--accent);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
-      .meta,
-      .list {
-        margin-top: 16px;
+      .status {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(154, 52, 18, 0.2);
       }
 
-      .meta-row {
-        display: flex;
-        justify-content: space-between;
+      .toolbar,
+      .columns,
+      .stack {
+        display: grid;
         gap: 12px;
-        padding: 6px 0;
-        border-top: 1px solid rgba(217, 205, 189, 0.6);
       }
 
-      .meta-row:first-child {
-        border-top: 0;
-        padding-top: 0;
+      .toolbar {
+        margin-top: 14px;
+      }
+
+      .columns {
+        margin-top: 18px;
+      }
+
+      .panel {
+        padding: 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(216, 198, 176, 0.9);
+      }
+
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font: inherit;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+      }
+
+      button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 96px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font: inherit;
+        color: inherit;
+        background: rgba(255, 255, 255, 0.95);
+        resize: vertical;
+      }
+
+      .check-grid {
+        display: grid;
+        gap: 8px;
+      }
+
+      .check-row {
+        display: grid;
+        grid-template-columns: 18px 1fr auto;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .check-row.negative span {
+        color: var(--warn);
+      }
+
+      .check-row small {
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
 
       ul {
-        margin: 10px 0 0;
+        margin: 0;
         padding-left: 18px;
       }
 
       li + li {
-        margin-top: 8px;
+        margin-top: 6px;
       }
 
       .empty {
@@ -102,48 +185,90 @@
   <body>
     <main>
       <div class="card">
-        <h1>Avatar Inspector</h1>
-        <p class="subtle">Analyza obrazku pres prave tlacitko -> Analyze Image.</p>
-
-        <section id="emptyState" class="empty">
-          <p>Zatim neni k dispozici zadna analyza.</p>
+        <section class="hero">
+          <span id="platformBadge" class="platform">generic</span>
+          <div>
+            <h1 id="profileName">Avatar Inspector</h1>
+            <p id="profileId" class="subtle">unknown</p>
+          </div>
+          <p class="subtle">Lokalni checklist duveryhodnosti profilu bez backendu.</p>
         </section>
 
-        <section id="report" hidden>
-          <div class="verdict">
-            <h2 id="verdict">Cekam na analyzu</h2>
-            <p id="analyzedAt" class="subtle"></p>
-            <p id="summary" class="subtle"></p>
+        <section id="unsupportedState" class="status subtle" hidden>
+          Aktivni stranka neni rozpoznana jako podporovany profil. Muze se zobrazit posledni ulozeny zaznam.
+        </section>
+
+        <section id="emptyState" class="empty" hidden>
+          <p>Zatim neni k dispozici zadny profilovy zaznam.</p>
+        </section>
+
+        <section id="profileView" hidden>
+          <div class="status">
+            <h2 id="photoStatus">Fotka zatim nebyla analyzovana.</h2>
+            <p id="analyzedAt" class="subtle">Zatim bez analyzy fotky.</p>
+            <p id="profileSummary" class="subtle"></p>
+            <p id="profileUrl" class="subtle"></p>
           </div>
 
-          <div class="meta">
-            <div class="meta-row">
-              <span>Rozmery</span>
-              <strong id="dimensions">-</strong>
-            </div>
-            <div class="meta-row">
-              <span>Skore</span>
-              <strong id="score">-</strong>
-            </div>
-            <div class="meta-row">
-              <span>Zdroj</span>
-              <strong id="sourceHost">-</strong>
-            </div>
+          <div class="toolbar">
+            <button id="analyzePhotoButton" type="button">Analyzovat profilovou fotku</button>
           </div>
 
-          <div class="list">
-            <h2>Indikatory</h2>
-            <ul id="indicators"></ul>
-          </div>
+          <div class="columns">
+            <section class="panel stack">
+              <div>
+                <h2>Identita</h2>
+                <div id="identityChecks" class="check-grid"></div>
+              </div>
+            </section>
 
-          <div class="list">
-            <h2>Metadata</h2>
-            <ul id="metadata"></ul>
-          </div>
+            <section class="panel stack">
+              <div>
+                <h2>Fotografie</h2>
+                <div id="photoChecks" class="check-grid"></div>
+              </div>
+            </section>
 
-          <div class="list">
-            <h2>Upozorneni</h2>
-            <ul id="warnings"></ul>
+            <section class="panel stack">
+              <div>
+                <h2>Socialni graf</h2>
+                <div id="socialChecks" class="check-grid"></div>
+              </div>
+              <div>
+                <h3>Zachycene signaly</h3>
+                <ul id="socialSignals"></ul>
+              </div>
+              <div>
+                <h3>Geograficke stopy</h3>
+                <ul id="locationHints"></ul>
+              </div>
+            </section>
+
+            <section class="panel stack">
+              <div>
+                <h2>Chovani</h2>
+                <div id="behaviorChecks" class="check-grid"></div>
+              </div>
+            </section>
+
+            <section class="panel stack">
+              <div>
+                <h2>Poznamka</h2>
+                <textarea id="noteField" placeholder="Napriklad: odmitla videohovor, fotka z marketplace, protichudne informace..."></textarea>
+              </div>
+              <button id="saveNoteButton" type="button">Ulozit poznamku</button>
+            </section>
+
+            <section class="panel stack">
+              <div>
+                <h2>Indikatory fotky</h2>
+                <ul id="indicators"></ul>
+              </div>
+              <div>
+                <h3>Upozorneni</h3>
+                <ul id="warnings"></ul>
+              </div>
+            </section>
           </div>
         </section>
       </div>

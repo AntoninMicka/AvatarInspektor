@@ -1,9 +1,25 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const exifrApi = globalThis.exifr;
 const MENU_ID = "avatar-inspector-analyze-image";
-const STORAGE_KEY = "lastAnalysis";
+const PROFILE_STORAGE_KEY = "profiles";
+const LAST_PROFILE_KEY = "lastProfileKey";
 
 let cachedRules = null;
+
+const manualCheckDefinitions = [
+  { key: "video_call_verified", category: "identity", label: "Videohovor probehl" },
+  { key: "voice_call_verified", category: "identity", label: "Hlasovy hovor probehl" },
+  { key: "real_life_meeting", category: "identity", label: "Osobni setkani" },
+  { key: "identity_verified", category: "identity", label: "Overena identita" },
+  { key: "refuses_video_call", category: "behavior", label: "Odmita videohovor" },
+  { key: "avoids_specific_answers", category: "behavior", label: "Vyhyba se konkretnim odpovedim" },
+  { key: "contradictory_information", category: "behavior", label: "Protichudne informace" },
+  { key: "rapid_intimacy", category: "behavior", label: "Rychly prechod k intimite" },
+  { key: "requests_photos", category: "behavior", label: "Zadosti o fotografie" },
+  { key: "explicit_content_sent", category: "behavior", label: "Explicitni obsah" },
+  { key: "financial_requests", category: "behavior", label: "Financni pozadavky" },
+  { key: "geo_inconsistency_observed", category: "social", label: "Nizka geograficka konzistence" }
+];
 
 extensionApi.runtime.onInstalled.addListener(async () => {
   await ensureContextMenu();
@@ -12,6 +28,55 @@ extensionApi.runtime.onInstalled.addListener(async () => {
 
 extensionApi.runtime.onStartup.addListener(async () => {
   await ensureContextMenu();
+});
+
+extensionApi.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId !== MENU_ID || !info.srcUrl) {
+    return;
+  }
+
+  const tabId = tab?.id;
+  const profileContext = tabId ? await getProfileContextFromTab(tabId) : null;
+  const domContext = tabId ? await getImageContextFromTab(tabId) : null;
+  const baseRecord = createProfileRecord(profileContext, info.pageUrl || tab?.url || null);
+  const analysis = await analyzeImage(info.srcUrl, domContext);
+  const updatedRecord = mergePhotoAnalysis(baseRecord, analysis, info.srcUrl);
+
+  await upsertProfile(updatedRecord);
+  await updateBadgeFromProfile(updatedRecord);
+  await openResultsView();
+});
+
+extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "avatar-inspector:get-active-profile") {
+    getActiveProfileState()
+      .then(sendResponse)
+      .catch((error) => sendResponse({ error: error.message }));
+    return true;
+  }
+
+  if (message?.type === "avatar-inspector:update-profile") {
+    updateProfile(message.profileKey, message.patch)
+      .then(sendResponse)
+      .catch((error) => sendResponse({ error: error.message }));
+    return true;
+  }
+
+  if (message?.type === "avatar-inspector:analyze-current-profile-photo") {
+    analyzeCurrentProfilePhoto()
+      .then(sendResponse)
+      .catch((error) => sendResponse({ error: error.message }));
+    return true;
+  }
+
+  if (message?.type === "avatar-inspector:get-last-analysis") {
+    getActiveProfileState()
+      .then((state) => sendResponse(state?.profile?.photoAnalysis || null))
+      .catch(() => sendResponse(null));
+    return true;
+  }
+
+  return false;
 });
 
 async function ensureContextMenu() {
@@ -23,36 +88,59 @@ async function ensureContextMenu() {
   });
 }
 
-extensionApi.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId !== MENU_ID || !info.srcUrl) {
-    return;
+async function getActiveProfileState() {
+  const tab = await getActiveTab();
+  const profileContext = tab?.id ? await getProfileContextFromTab(tab.id) : null;
+  const isSupportedProfile = isSupportedProfileContext(profileContext);
+  let profile = null;
+
+  if (isSupportedProfile) {
+    profile = await findOrCreateProfile(profileContext, tab?.url || null);
+  } else {
+    profile = await getLastProfile();
   }
 
-  const domContext = tab?.id ? await getImageContextFromTab(tab.id) : null;
-  const analysis = await analyzeImage(info.srcUrl, domContext);
-
-  await extensionApi.storage.local.set({
-    [STORAGE_KEY]: {
-      ...analysis,
-      analyzedAt: new Date().toISOString(),
-      pageUrl: info.pageUrl || tab?.url || null
-    }
-  });
-
-  await updateBadge(analysis.verdict);
-  await openResultsView();
-});
-
-extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "avatar-inspector:get-last-analysis") {
-    extensionApi.storage.local.get(STORAGE_KEY).then((result) => {
-      sendResponse(result[STORAGE_KEY] || null);
-    });
-    return true;
+  if (!profile) {
+    return {
+      profile: null,
+      supported: isSupportedProfile,
+      profileContext
+    };
   }
 
-  return false;
-});
+  return {
+    profile,
+    supported: isSupportedProfile,
+    profileContext
+  };
+}
+
+async function analyzeCurrentProfilePhoto() {
+  const tab = await getActiveTab();
+  if (!tab?.id) {
+    throw new Error("Aktivni panel se nepodarilo zjistit.");
+  }
+
+  const profileContext = await getProfileContextFromTab(tab.id);
+  if (!isSupportedProfileContext(profileContext) || !profileContext?.profileImage) {
+    throw new Error("Na aktualni strance se nepodarilo najit profilovou fotku.");
+  }
+
+  const domContext = await getImageContextFromTab(tab.id);
+  const baseRecord = await findOrCreateProfile(profileContext, tab.url || null);
+  const analysis = await analyzeImage(profileContext.profileImage, domContext);
+  const updatedRecord = mergePhotoAnalysis(baseRecord, analysis, profileContext.profileImage);
+
+  await upsertProfile(updatedRecord);
+  await updateBadgeFromProfile(updatedRecord);
+
+  return updatedRecord;
+}
+
+async function getActiveTab() {
+  const tabs = await extensionApi.tabs.query({ active: true, currentWindow: true });
+  return tabs[0] || null;
+}
 
 async function getImageContextFromTab(tabId) {
   try {
@@ -62,6 +150,192 @@ async function getImageContextFromTab(tabId) {
   } catch (_error) {
     return null;
   }
+}
+
+async function getProfileContextFromTab(tabId) {
+  try {
+    return await extensionApi.tabs.sendMessage(tabId, {
+      type: "avatar-inspector:get-profile-context"
+    });
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function findOrCreateProfile(profileContext, pageUrl) {
+  const profileKey = buildProfileKey(profileContext);
+  const { profiles = {} } = await extensionApi.storage.local.get([
+    PROFILE_STORAGE_KEY,
+    LAST_PROFILE_KEY
+  ]);
+
+  const existing = profiles[profileKey];
+  const merged = enrichProfileRecord(existing || createProfileRecord(profileContext, pageUrl), profileContext, pageUrl);
+
+  await extensionApi.storage.local.set({
+    [PROFILE_STORAGE_KEY]: {
+      ...profiles,
+      [profileKey]: merged
+    },
+    [LAST_PROFILE_KEY]: profileKey
+  });
+
+  return merged;
+}
+
+async function getLastProfile() {
+  const stored = await extensionApi.storage.local.get([PROFILE_STORAGE_KEY, LAST_PROFILE_KEY]);
+  const profiles = stored[PROFILE_STORAGE_KEY] || {};
+  const profileKey = stored[LAST_PROFILE_KEY];
+  return profileKey ? profiles[profileKey] || null : null;
+}
+
+function createProfileRecord(profileContext, pageUrl) {
+  const timestamp = new Date().toISOString();
+  const key = buildProfileKey(profileContext);
+  const automaticChecks = buildAutomaticChecks(profileContext, null);
+
+  return {
+    key,
+    platform: profileContext?.platform || "generic",
+    profileId: profileContext?.profileId || "unknown",
+    profileName: profileContext?.profileName || "Neznamy profil",
+    pageUrl: pageUrl || profileContext?.pageUrl || null,
+    notes: "",
+    manualChecks: buildDefaultManualChecks(),
+    automaticChecks,
+    socialGraph: buildSocialGraph(profileContext?.socialSignals),
+    photoAnalysis: null,
+    createdAt: timestamp,
+    updatedAt: timestamp
+  };
+}
+
+function enrichProfileRecord(record, profileContext, pageUrl) {
+  const automaticChecks = buildAutomaticChecks(profileContext, record.photoAnalysis);
+
+  return {
+    ...record,
+    platform: profileContext?.platform || record.platform,
+    profileId: profileContext?.profileId || record.profileId,
+    profileName: profileContext?.profileName || record.profileName,
+    pageUrl: pageUrl || profileContext?.pageUrl || record.pageUrl,
+    automaticChecks: {
+      ...record.automaticChecks,
+      ...automaticChecks
+    },
+    socialGraph: buildSocialGraph(profileContext?.socialSignals, record.socialGraph),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function buildProfileKey(profileContext) {
+  const platform = profileContext?.platform || "generic";
+  const profileId = profileContext?.profileId || sanitizeId(profileContext?.profileName) || "unknown";
+  return `${platform}:${profileId}`;
+}
+
+function isSupportedProfileContext(profileContext) {
+  return Boolean(
+    profileContext &&
+      profileContext.platform &&
+      profileContext.platform !== "generic" &&
+      profileContext.pageType === "profile" &&
+      (profileContext.profileId || profileContext.profileName)
+  );
+}
+
+function sanitizeId(value) {
+  return value ? value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") : null;
+}
+
+function buildDefaultManualChecks() {
+  return manualCheckDefinitions.reduce((accumulator, definition) => {
+    accumulator[definition.key] = false;
+    return accumulator;
+  }, {});
+}
+
+function buildAutomaticChecks(profileContext, photoAnalysis) {
+  const socialSignals = profileContext?.socialSignals || {};
+  const indicators = photoAnalysis?.indicators || [];
+
+  return {
+    profile_photo_analyzed: Boolean(photoAnalysis),
+    photo_low_resolution: indicators.some((indicator) => indicator.key === "low_resolution"),
+    photo_external_source: indicators.some((indicator) => indicator.key.endsWith("_cdn") || indicator.key.endsWith("_asset")),
+    photo_metadata_present: indicators.some((indicator) => indicator.key === "camera_model_present" || indicator.key === "date_taken_present"),
+    profile_name_detected: Boolean(profileContext?.profileName),
+    profile_photo_detected: Boolean(profileContext?.profileImage),
+    account_history_detected: Boolean(profileContext?.pageType === "profile"),
+    social_graph_available: Boolean(socialSignals.friendsLabel || socialSignals.followersLabel || socialSignals.sharedServersLabel),
+    location_hints_detected: Array.isArray(socialSignals.locationHints) && socialSignals.locationHints.length > 0
+  };
+}
+
+function buildSocialGraph(socialSignals, currentGraph = {}) {
+  return {
+    friendsLabel: socialSignals?.friendsLabel || currentGraph.friendsLabel || null,
+    followersLabel: socialSignals?.followersLabel || currentGraph.followersLabel || null,
+    sharedServersLabel: socialSignals?.sharedServersLabel || currentGraph.sharedServersLabel || null,
+    locationHints: socialSignals?.locationHints || currentGraph.locationHints || []
+  };
+}
+
+function mergePhotoAnalysis(record, analysis, srcUrl) {
+  return {
+    ...record,
+    photoAnalysis: {
+      ...analysis,
+      analyzedAt: new Date().toISOString(),
+      srcUrl
+    },
+    automaticChecks: {
+      ...record.automaticChecks,
+      ...buildAutomaticChecks(
+        {
+          profileName: record.profileName,
+          profileImage: srcUrl,
+          pageType: "profile",
+          socialSignals: record.socialGraph
+        },
+        analysis
+      )
+    },
+    updatedAt: new Date().toISOString()
+  };
+}
+
+async function updateProfile(profileKey, patch) {
+  const stored = await extensionApi.storage.local.get(PROFILE_STORAGE_KEY);
+  const profiles = stored[PROFILE_STORAGE_KEY] || {};
+  const current = profiles[profileKey];
+
+  if (!current) {
+    throw new Error("Profil se nepodarilo najit.");
+  }
+
+  const updated = {
+    ...current,
+    notes: typeof patch?.notes === "string" ? patch.notes : current.notes,
+    manualChecks: patch?.manualChecks ? { ...current.manualChecks, ...patch.manualChecks } : current.manualChecks,
+    updatedAt: new Date().toISOString()
+  };
+
+  await upsertProfile(updated);
+  return updated;
+}
+
+async function upsertProfile(profile) {
+  const stored = await extensionApi.storage.local.get(PROFILE_STORAGE_KEY);
+  const profiles = stored[PROFILE_STORAGE_KEY] || {};
+  await extensionApi.storage.local.set({
+    [PROFILE_STORAGE_KEY]: {
+      ...profiles,
+      [profile.key]: profile
+    },
+    [LAST_PROFILE_KEY]: profile.key
+  });
 }
 
 async function analyzeImage(srcUrl, domContext) {
@@ -119,7 +393,7 @@ async function analyzeImage(srcUrl, domContext) {
       key: "dom_alt_text",
       label: "DOM context captured",
       severity: "positive",
-      "weight": 0.5,
+      weight: 0.5,
       reason: `Found alt text: "${truncate(domContext.alt, 80)}".`
     });
   }
@@ -129,7 +403,7 @@ async function analyzeImage(srcUrl, domContext) {
       key: "dom_title_text",
       label: "Image title captured",
       severity: "neutral",
-      "weight": 0,
+      weight: 0,
       reason: `Found title attribute: "${truncate(domContext.title, 80)}".`
     });
   }
@@ -257,13 +531,13 @@ function buildAnalysis({ srcUrl, indicators, warnings, dimensions, metadata }) {
     { positive: 0, negative: 0, neutral: 0, positiveWeight: 0, negativeWeight: 0 }
   );
 
-  let verdict = "Likely original photo";
   const finalScore = scoring.positiveWeight - scoring.negativeWeight;
+  let verdict = "Bez zjevnych problemu";
 
   if (scoring.negativeWeight >= 3) {
-    verdict = "Likely reused or republished photo";
+    verdict = "Vyrazne nesrovnalosti";
   } else if (scoring.negativeWeight >= 1) {
-    verdict = "Mixed signals";
+    verdict = "Vyzaduje pozornost";
   }
 
   return {
@@ -281,7 +555,7 @@ function buildAnalysis({ srcUrl, indicators, warnings, dimensions, metadata }) {
 
 function buildSummary(indicators, warnings) {
   if (indicators.length === 0 && warnings.length === 0) {
-    return "No strong signs were found yet.";
+    return "Zatim nebyly nalezeny vyrazne signaly.";
   }
 
   const topIndicator = indicators[0];
@@ -376,16 +650,20 @@ async function loadRules() {
   return cachedRules;
 }
 
-async function updateBadge(verdict) {
-  let text = "OK";
-  let color = "#2f855a";
+async function updateBadgeFromProfile(profile) {
+  const verdict = profile?.photoAnalysis?.verdict;
+  let text = "NOTE";
+  let color = "#6b7280";
 
-  if (verdict === "Likely reused or republished photo") {
+  if (verdict === "Vyrazne nesrovnalosti") {
     text = "WARN";
-    color = "#c05621";
-  } else if (verdict === "Mixed signals") {
+    color = "#b91c1c";
+  } else if (verdict === "Vyzaduje pozornost") {
     text = "MIX";
-    color = "#b7791f";
+    color = "#b45309";
+  } else if (verdict === "Bez zjevnych problemu") {
+    text = "OK";
+    color = "#047857";
   }
 
   await extensionApi.action.setBadgeText({ text });
