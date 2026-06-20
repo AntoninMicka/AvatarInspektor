@@ -1,6 +1,10 @@
 {
   "name": "avatar-inspector",
   "private": true,
+  "scripts": {
+    "sync:vendor": "node scripts/sync-vendor.mjs",
+    "build:firefox": "node scripts/build-firefox.mjs"
+  },
   "dependencies": {
     "exifr": "^7.1.3"
   }

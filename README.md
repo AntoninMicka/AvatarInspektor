@@ -21,10 +21,20 @@ Vsechno zustava pouze lokalne v ulozisti rozsireni.
 - umi analyzovat profilovou fotku a pridat automaticke indikatory
 - zachova puvodni kontextove menu `Analyze Image` pro rucni analyzu libovolneho obrazku
 
-## Instalace
+## Instalace pro vyvoj
 
 1. Spust `npm install`
-2. Nacti extension jako unpacked / temporary addon
+2. Spust `npm run sync:vendor`
+3. Nacti extension jako unpacked / temporary addon
+
+## Build balicku pro Firefox
+
+1. Spust `npm install`
+2. Spust `npm run sync:vendor`
+3. Spust `npm run build:firefox`
+4. Hotovy balicek najdes v `dist/AvatarInspector-firefox.xpi`
+
+Build zkopiruje jen soubory potrebne pro beh rozsireni, takze vysledny balicek neni zavisly na `node_modules`.
 
 ## Jak nacist do Chrome
 
@@ -32,6 +42,12 @@ Vsechno zustava pouze lokalne v ulozisti rozsireni.
 2. Zapni `Developer mode`
 3. Klikni na `Load unpacked`
 4. Vyber slozku projektu `AvatarInspektor`
+
+## GitHub Releases
+
+- workflow `.github/workflows/release-firefox.yml` sestavi `.xpi` pri vytvoreni tagu `v*`
+- stejny workflow lze spustit i rucne pres `workflow_dispatch`
+- hotovy balicek se nahraje jako artifact a u tagu i jako asset do GitHub Release
 
 ## Jak otestovat
 

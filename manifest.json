@@ -11,7 +11,7 @@
   ],
   "background": {
     "scripts": [
-      "node_modules/exifr/dist/full.umd.js",
+      "vendor/exifr/full.umd.js",
       "background.js"
     ]
   },
