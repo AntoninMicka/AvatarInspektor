@@ -1,20 +1,21 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "Avatar Inspector",
   "version": "0.1.0",
   "description": "Local profile trust checklist with manual notes and profile-photo heuristics.",
   "permissions": [
     "contextMenus",
     "storage",
-    "tabs"
-  ],
-  "host_permissions": [
+    "tabs",
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background-worker.js"
+    "scripts": [
+      "node_modules/exifr/dist/full.umd.js",
+      "background.js"
+    ]
   },
-  "action": {
+  "browser_action": {
     "default_title": "Avatar Inspector",
     "default_popup": "popup.html"
   },
@@ -30,13 +31,6 @@
     }
   ],
   "web_accessible_resources": [
-    {
-      "resources": [
-        "rules.json"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
+    "rules.json"
   ]
 }

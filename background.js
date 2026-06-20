@@ -1,4 +1,5 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
+const actionApi = extensionApi.action ?? extensionApi.browserAction;
 const exifrApi = globalThis.exifr;
 const MENU_ID = "avatar-inspector-analyze-image";
 const PROFILE_STORAGE_KEY = "profiles";
@@ -23,7 +24,7 @@ const manualCheckDefinitions = [
 
 extensionApi.runtime.onInstalled.addListener(async () => {
   await ensureContextMenu();
-  await extensionApi.action.setBadgeText({ text: "" });
+  await actionApi.setBadgeText({ text: "" });
 });
 
 extensionApi.runtime.onStartup.addListener(async () => {
@@ -666,14 +667,14 @@ async function updateBadgeFromProfile(profile) {
     color = "#047857";
   }
 
-  await extensionApi.action.setBadgeText({ text });
-  await extensionApi.action.setBadgeBackgroundColor({ color });
+  await actionApi.setBadgeText({ text });
+  await actionApi.setBadgeBackgroundColor({ color });
 }
 
 async function openResultsView() {
-  if (typeof extensionApi.action.openPopup === "function") {
+  if (typeof actionApi?.openPopup === "function") {
     try {
-      await extensionApi.action.openPopup();
+      await actionApi.openPopup();
       return;
     } catch (_error) {
       // Firefox may refuse popup opening in some extension contexts.
