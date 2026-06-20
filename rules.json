@@ -1,0 +1,42 @@
+{
+  "thresholds": {
+    "lowResolution": {
+      "maxShortEdge": 320
+    },
+    "squareTolerance": 12
+  },
+  "sources": [
+    {
+      "key": "facebook_cdn",
+      "label": "Facebook CDN",
+      "severity": "negative",
+      "reason": "Image URL matches a Facebook delivery host.",
+      "hosts": ["fbcdn.net", "facebook.com"],
+      "pathFragments": ["fbcdn"]
+    },
+    {
+      "key": "instagram_cdn",
+      "label": "Instagram CDN",
+      "severity": "negative",
+      "reason": "Image URL matches Instagram media delivery.",
+      "hosts": ["cdninstagram.com", "instagram.com"],
+      "pathFragments": ["/vp/"]
+    },
+    {
+      "key": "redbubble_asset",
+      "label": "Redbubble asset",
+      "severity": "negative",
+      "reason": "Image URL resembles a marketplace preview asset.",
+      "hosts": ["redbubble.net", "redbubble.com"],
+      "pathFragments": ["rb-upload", "works", "mp"]
+    },
+    {
+      "key": "pinterest_asset",
+      "label": "Pinterest asset",
+      "severity": "negative",
+      "reason": "Image URL matches Pinterest hosting.",
+      "hosts": ["pinimg.com", "pinterest.com"],
+      "pathFragments": ["originals", "736x"]
+    }
+  ]
+}

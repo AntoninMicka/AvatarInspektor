@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avatar Inspector</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4efe7;
+        --panel: #fffdf9;
+        --line: #d9cdbd;
+        --text: #1f2933;
+        --muted: #6b7280;
+        --accent: #b45309;
+        --accent-soft: #fde6c8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        width: 360px;
+        min-height: 420px;
+        font: 14px/1.5 Georgia, "Times New Roman", serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(180, 83, 9, 0.16), transparent 36%),
+          linear-gradient(180deg, #f8f3ec 0%, var(--bg) 100%);
+      }
+
+      main {
+        padding: 18px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(31, 41, 51, 0.08);
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 22px;
+        margin-bottom: 6px;
+      }
+
+      .subtle {
+        color: var(--muted);
+      }
+
+      .verdict {
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 12px;
+        background: var(--accent-soft);
+        border: 1px solid rgba(180, 83, 9, 0.18);
+      }
+
+      .meta,
+      .list {
+        margin-top: 16px;
+      }
+
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 0;
+        border-top: 1px solid rgba(217, 205, 189, 0.6);
+      }
+
+      .meta-row:first-child {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      li + li {
+        margin-top: 8px;
+      }
+
+      .empty {
+        padding: 36px 18px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="card">
+        <h1>Avatar Inspector</h1>
+        <p class="subtle">Analyze an image via right click -> Analyze Image.</p>
+
+        <section id="emptyState" class="empty">
+          <p>No analysis yet.</p>
+        </section>
+
+        <section id="report" hidden>
+          <div class="verdict">
+            <h2 id="verdict">Waiting for analysis</h2>
+            <p id="analyzedAt" class="subtle"></p>
+          </div>
+
+          <div class="meta">
+            <div class="meta-row">
+              <span>Dimensions</span>
+              <strong id="dimensions">-</strong>
+            </div>
+            <div class="meta-row">
+              <span>Score</span>
+              <strong id="score">-</strong>
+            </div>
+            <div class="meta-row">
+              <span>Source</span>
+              <strong id="sourceHost">-</strong>
+            </div>
+          </div>
+
+          <div class="list">
+            <h2>Indicators</h2>
+            <ul id="indicators"></ul>
+          </div>
+
+          <div class="list">
+            <h2>Warnings</h2>
+            <ul id="warnings"></ul>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

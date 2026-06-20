@@ -3,168 +3,168 @@
 ## 1. Navrh projektu
 
 ### Vybrat nazev projektu
-- Profile Photo Analyzer
-- Photo Authenticity Inspector
-- Avatar Inspector
+- [ ] Profile Photo Analyzer
+- [ ] Photo Authenticity Inspector
+- [x] Avatar Inspector
 
 ### Definovat cil projektu
-- Nehodnotit osoby ani profily
-- Hodnotit pouze technicke vlastnosti fotografii
-- Poskytovat transparentni zduvodneni vysledku
+- [x] Nehodnotit osoby ani profily
+- [x] Hodnotit pouze technicke vlastnosti fotografii
+- [x] Poskytovat transparentni zduvodneni vysledku
 
 ## 2. Browser Extension zaklad
 
-- Vytvorit Manifest V3
-- Overit kompatibilitu Chrome
-- Overit kompatibilitu Firefox
-- Pripravit build system
-- Pripravit GitHub repozitar
+- [x] Vytvorit Manifest V3
+- [ ] Overit kompatibilitu Chrome
+- [ ] Overit kompatibilitu Firefox
+- [ ] Pripravit build system
+- [ ] Pripravit GitHub repozitar
 
 ### Struktura
-- `manifest.json`
-- `background.js`
-- `content.js`
-- `popup.html`
-- `popup.js`
-- `rules.json`
+- [x] `manifest.json`
+- [x] `background.js`
+- [x] `content.js`
+- [x] `popup.html`
+- [x] `popup.js`
+- [x] `rules.json`
 
 ## 3. Integrace EXIF parseru
 
-- Vyhodnotit knihovnu `exifr`
-- Nacteni EXIF z obrazku
-- Nacteni IPTC dat
-- Nacteni XMP dat
-- Osetreni chybejicich metadat
+- [ ] Vyhodnotit knihovnu `exifr`
+- [ ] Nacteni EXIF z obrazku
+- [ ] Nacteni IPTC dat
+- [ ] Nacteni XMP dat
+- [ ] Osetreni chybejicich metadat
 
 ## 4. Detekce zdroje obrazku
 
 ### Facebook
-- Detekce FBMD tagu
-- Detekce facebookoveho nazvu souboru
-- Detekce `fbcdn.net` URL
+- [ ] Detekce FBMD tagu
+- [ ] Detekce facebookoveho nazvu souboru
+- [x] Detekce `fbcdn.net` URL
 
 ### Instagram
-- Detekce Instagram CDN
-- Detekce typickych thumbnail rozmeru
+- [x] Detekce Instagram CDN
+- [ ] Detekce typickych thumbnail rozmeru
 
 ### Messenger
-- Detekce messenger exportu
+- [ ] Detekce messenger exportu
 
 ### Pinterest
-- Detekce `pinimg.com`
-- Detekce Pinterest metadat
+- [x] Detekce `pinimg.com`
+- [ ] Detekce Pinterest metadat
 
 ### Redbubble
-- Detekce Redbubble URL
-- Detekce Redbubble copyright tagu
-- Detekce typickych nahledovych nazvu
+- [x] Detekce Redbubble URL
+- [ ] Detekce Redbubble copyright tagu
+- [ ] Detekce typickych nahledovych nazvu
 
 ### Dalsi sluzby
-- Canva
-- Shutterstock
-- Adobe Stock
-- Freepik
-- GIMP
-- Photoshop
-- WhatsApp
-- Telegram
+- [ ] Canva
+- [ ] Shutterstock
+- [ ] Adobe Stock
+- [ ] Freepik
+- [ ] GIMP
+- [ ] Photoshop
+- [ ] WhatsApp
+- [ ] Telegram
 
 ## 5. Analyza obrazku
 
 ### Rozliseni
-- Detekce nizkeho rozliseni
-- Detekce nahledovych rozliseni
-- Detekce avatar rozmeru
+- [x] Detekce nizkeho rozliseni
+- [ ] Detekce nahledovych rozliseni
+- [x] Detekce avatar rozmeru
 
 ### Pomer stran
-- Ctvercove avatary
-- Mobilni screenshoty
-- Desktop screenshoty
+- [x] Ctvercove avatary
+- [ ] Mobilni screenshoty
+- [ ] Desktop screenshoty
 
 ### Metadata
-- Autor
-- Copyright
-- Software
-- Camera Model
-- Date Taken
+- [ ] Autor
+- [ ] Copyright
+- [ ] Software
+- [ ] Camera Model
+- [ ] Date Taken
 
 ## 6. Scoring Engine
 
 ### Pozitivni indikatory
-- Model telefonu
-- Datum porizeni
-- Vysoke rozliseni
-- Konzistentni metadata
+- [ ] Model telefonu
+- [ ] Datum porizeni
+- [ ] Vysoke rozliseni
+- [x] Konzistentni metadata
 
 ### Negativni indikatory
-- Komercni zdroj
-- Socialni sit
-- Nahledovy obrazek
-- Cizi copyright
-- Editacni software
-- Screenshot
+- [ ] Komercni zdroj
+- [x] Socialni sit
+- [ ] Nahledovy obrazek
+- [ ] Cizi copyright
+- [ ] Editacni software
+- [ ] Screenshot
 
 ### Konfigurace
-- Presunout pravidla do JSON
-- Moznost ladeni vah
-- Moznost vypinat pravidla
+- [x] Presunout pravidla do JSON
+- [ ] Moznost ladeni vah
+- [ ] Moznost vypinat pravidla
 
 ## 7. Report
 
 ### Verdikty
-- 🟢 Pravdepodobne originalni fotografie
-- 🟡 Upravena nebo znovu publikovana fotografie
-- 🟠 Fotografie vykazuje znamky prevzeti
-- 🔴 Fotografie pravdepodobne neni puvodni osobni fotografie
+- [x] 🟢 Pravdepodobne originalni fotografie
+- [x] 🟡 Upravena nebo znovu publikovana fotografie
+- [x] 🟠 Fotografie vykazuje znamky prevzeti
+- [ ] 🔴 Fotografie pravdepodobne neni puvodni osobni fotografie
 
 ### Detailni vypis
-- Zobrazeni vsech nalezenych indikatoru
-- Vysvetleni kazdeho pravidla
-- Zobrazeni skore
+- [x] Zobrazeni vsech nalezenych indikatoru
+- [ ] Vysvetleni kazdeho pravidla
+- [x] Zobrazeni skore
 
 ## 8. UI
 
-- Kontextove menu "Analyze Image"
-- Popup s vysledkem
-- Detailni report
-- Kopirovani reportu do schranky
+- [x] Kontextove menu "Analyze Image"
+- [x] Popup s vysledkem
+- [x] Detailni report
+- [ ] Kopirovani reportu do schranky
 
 ## 9. Testovaci sada
 
 ### Vzorky
-- Originalni fotky z telefonu
-- Facebook profilovky
-- Instagram profilovky
-- Messenger exporty
-- Redbubble nahledy
-- Pinterest obrazky
-- Stock fotografie
-- Screenshoty
+- [ ] Originalni fotky z telefonu
+- [ ] Facebook profilovky
+- [ ] Instagram profilovky
+- [ ] Messenger exporty
+- [ ] Redbubble nahledy
+- [ ] Pinterest obrazky
+- [ ] Stock fotografie
+- [ ] Screenshoty
 
 ### Overeni
-- Minimalizace false positives
-- Overeni na realnych profilech
-- Kontrola konzistence vysledku
+- [ ] Minimalizace false positives
+- [ ] Overeni na realnych profilech
+- [ ] Kontrola konzistence vysledku
 
 ## 10. Budouci rozsireni
 
-- Export JSON reportu
-- Export HTML reportu
-- CLI verze
-- Lokalni davkova analyza adresare
-- Integrace s ExifTool pro pokrocily rezim
+- [ ] Export JSON reportu
+- [ ] Export HTML reportu
+- [ ] CLI verze
+- [ ] Lokalni davkova analyza adresare
+- [ ] Integrace s ExifTool pro pokrocily rezim
 
 ## MVP (vikendova verze)
 
-- Manifest V3
-- Prave tlacitko -> Analyze Image
-- `exifr` integrace
-- Detekce Facebook
-- Detekce Redbubble
-- Detekce copyrightu
-- Detekce rozliseni
-- Jednoduchy scoring
-- Popup s reportem
+- [x] Manifest V3
+- [x] Prave tlacitko -> Analyze Image
+- [ ] `exifr` integrace
+- [x] Detekce Facebook
+- [x] Detekce Redbubble
+- [ ] Detekce copyrightu
+- [x] Detekce rozliseni
+- [x] Jednoduchy scoring
+- [x] Popup s reportem
 
 ### Ukazka vystupu
 
