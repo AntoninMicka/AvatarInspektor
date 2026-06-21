@@ -53,7 +53,13 @@
       "severity": "negative",
       "weight": 1.5,
       "reason": "Image URL matches a common stock-photo or asset host.",
-      "hosts": ["unsplash.com", "images.unsplash.com", "pexels.com", "pixabay.com", "shutterstock.com"],
+      "hosts": [
+        "unsplash.com",
+        "images.unsplash.com",
+        "pexels.com",
+        "pixabay.com",
+        "shutterstock.com"
+      ],
       "pathFragments": ["photo-", "/photos/", "/vectors/", "/illustrations/"]
     }
   ]

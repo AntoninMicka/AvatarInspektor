@@ -2,8 +2,17 @@
   "name": "avatar-inspector",
   "private": true,
   "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "sync:vendor": "node scripts/sync-vendor.mjs",
     "build:firefox": "node scripts/build-firefox.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.31.0",
+    "eslint": "^9.31.0",
+    "globals": "^15.9.0",
+    "prettier": "^3.6.2"
   },
   "dependencies": {
     "exifr": "^7.1.3"

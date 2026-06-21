@@ -1,57 +1,193 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const actionApi = extensionApi.action ?? extensionApi.browserAction;
 const exifrApi = globalThis.exifr;
-const MENU_ID = "avatar-inspector-analyze-image";
-const PROFILE_STORAGE_KEY = "profiles";
-const LAST_PROFILE_KEY = "lastProfileKey";
+const MENU_ID = 'avatar-inspector-analyze-image';
+const PROFILE_STORAGE_KEY = 'profiles';
+const LAST_PROFILE_KEY = 'lastProfileKey';
 
 let cachedRules = null;
 
 const manualCheckDefinitions = [
-  { key: "video_call_verified", category: "identity", label: "Videohovor probehl" },
-  { key: "voice_call_verified", category: "identity", label: "Hlasovy hovor probehl" },
-  { key: "real_life_meeting", category: "identity", label: "Osobni setkani" },
-  { key: "identity_verified", category: "identity", label: "Overena identita" },
-  { key: "refuses_video_call", category: "behavior", label: "Odmita videohovor" },
-  { key: "avoids_specific_answers", category: "behavior", label: "Vyhyba se konkretnim odpovedim" },
-  { key: "contradictory_information", category: "behavior", label: "Protichudne informace" },
-  { key: "rapid_intimacy", category: "behavior", label: "Rychly prechod k intimite" },
-  { key: "requests_photos", category: "behavior", label: "Zadosti o fotografie" },
-  { key: "explicit_content_sent", category: "behavior", label: "Explicitni obsah" },
-  { key: "financial_requests", category: "behavior", label: "Financni pozadavky" },
-  { key: "geo_inconsistency_observed", category: "social", label: "Nizka geograficka konzistence" }
+  {
+    key: 'video_call_verified',
+    category: 'identity',
+    label: 'Videohovor probehl',
+  },
+  {
+    key: 'voice_call_verified',
+    category: 'identity',
+    label: 'Hlasovy hovor probehl',
+  },
+  { key: 'real_life_meeting', category: 'identity', label: 'Osobni setkani' },
+  { key: 'identity_verified', category: 'identity', label: 'Overena identita' },
+  {
+    key: 'refuses_video_call',
+    category: 'behavior',
+    label: 'Odmita videohovor',
+  },
+  {
+    key: 'avoids_specific_answers',
+    category: 'behavior',
+    label: 'Vyhyba se konkretnim odpovedim',
+  },
+  {
+    key: 'contradictory_information',
+    category: 'behavior',
+    label: 'Protichudne informace',
+  },
+  {
+    key: 'rapid_intimacy',
+    category: 'behavior',
+    label: 'Rychly prechod k intimite',
+  },
+  {
+    key: 'requests_photos',
+    category: 'behavior',
+    label: 'Zadosti o fotografie',
+  },
+  {
+    key: 'explicit_content_sent',
+    category: 'behavior',
+    label: 'Explicitni obsah',
+  },
+  {
+    key: 'financial_requests',
+    category: 'behavior',
+    label: 'Financni pozadavky',
+  },
+  {
+    key: 'geo_inconsistency_observed',
+    category: 'social',
+    label: 'Nizka geograficka konzistence',
+  },
 ];
 
 const assessmentRuleDefinitions = {
-  video_call_verified: { severity: "positive", weight: 1.5, reason: "Videohovor byl potvrzen." },
-  voice_call_verified: { severity: "positive", weight: 1, reason: "Hlasovy kontakt probiha konzistentne." },
-  real_life_meeting: { severity: "positive", weight: 2, reason: "Probehl osobni kontakt." },
-  identity_verified: { severity: "positive", weight: 2, reason: "Identita byla overena." },
-  refuses_video_call: { severity: "negative", weight: 1.5, reason: "Profil odmitl videohovor." },
-  avoids_specific_answers: { severity: "negative", weight: 1, reason: "Objevuje se vyhybani konkretnim odpovedim." },
-  contradictory_information: { severity: "negative", weight: 1.5, reason: "Byly zaznamenany protichudne informace." },
-  rapid_intimacy: { severity: "negative", weight: 1, reason: "Interakce tlaci na rychlou intimitu." },
-  requests_photos: { severity: "negative", weight: 1, reason: "Profil opakovane zada fotografie." },
-  explicit_content_sent: { severity: "negative", weight: 1.5, reason: "Byl zaslan explicitni obsah." },
-  financial_requests: { severity: "negative", weight: 2, reason: "Objevily se financni pozadavky." },
-  geo_inconsistency_observed: { severity: "negative", weight: 1.5, reason: "Geograficke stopy si odporuji." },
-  profile_name_detected: { severity: "positive", weight: 0.5, reason: "Jmeno profilu je rozpoznane." },
-  profile_photo_detected: { severity: "positive", weight: 0.5, reason: "Profilova fotka byla nalezena." },
-  account_history_detected: { severity: "positive", weight: 0.5, reason: "Stranka vypada jako skutecny profil." },
-  social_graph_available: { severity: "positive", weight: 0.5, reason: "Jsou videt socialni vazby nebo dosah." },
-  location_hints_detected: { severity: "positive", weight: 0.25, reason: "Byly zachyceny geograficke stopy." },
-  photo_metadata_present: { severity: "positive", weight: 0.5, reason: "Fotka nese pouzitelna metadata." },
-  photo_low_resolution: { severity: "negative", weight: 0.75, reason: "Profilova fotka ma nizke rozliseni." },
-  photo_external_source: { severity: "negative", weight: 1, reason: "Fotka pusobi jako externi nebo komercni asset." },
-  photo_screenshot_like: { severity: "negative", weight: 1.25, reason: "Rozmery nebo nazev vypadaji jako screenshot." },
-  photo_heavily_compressed: { severity: "negative", weight: 1, reason: "Fotka vypada jako silne komprimovany export nebo thumbnail." },
-  photo_copyright_metadata: { severity: "negative", weight: 1.25, reason: "Fotka obsahuje copyright nebo autorske metadata." },
-  photo_avatar_crop_like: { severity: "positive", weight: 0.5, reason: "Rozmery pripominaji bezny avatar crop." }
+  video_call_verified: {
+    severity: 'positive',
+    weight: 1.5,
+    reason: 'Videohovor byl potvrzen.',
+  },
+  voice_call_verified: {
+    severity: 'positive',
+    weight: 1,
+    reason: 'Hlasovy kontakt probiha konzistentne.',
+  },
+  real_life_meeting: {
+    severity: 'positive',
+    weight: 2,
+    reason: 'Probehl osobni kontakt.',
+  },
+  identity_verified: {
+    severity: 'positive',
+    weight: 2,
+    reason: 'Identita byla overena.',
+  },
+  refuses_video_call: {
+    severity: 'negative',
+    weight: 1.5,
+    reason: 'Profil odmitl videohovor.',
+  },
+  avoids_specific_answers: {
+    severity: 'negative',
+    weight: 1,
+    reason: 'Objevuje se vyhybani konkretnim odpovedim.',
+  },
+  contradictory_information: {
+    severity: 'negative',
+    weight: 1.5,
+    reason: 'Byly zaznamenany protichudne informace.',
+  },
+  rapid_intimacy: {
+    severity: 'negative',
+    weight: 1,
+    reason: 'Interakce tlaci na rychlou intimitu.',
+  },
+  requests_photos: {
+    severity: 'negative',
+    weight: 1,
+    reason: 'Profil opakovane zada fotografie.',
+  },
+  explicit_content_sent: {
+    severity: 'negative',
+    weight: 1.5,
+    reason: 'Byl zaslan explicitni obsah.',
+  },
+  financial_requests: {
+    severity: 'negative',
+    weight: 2,
+    reason: 'Objevily se financni pozadavky.',
+  },
+  geo_inconsistency_observed: {
+    severity: 'negative',
+    weight: 1.5,
+    reason: 'Geograficke stopy si odporuji.',
+  },
+  profile_name_detected: {
+    severity: 'positive',
+    weight: 0.5,
+    reason: 'Jmeno profilu je rozpoznane.',
+  },
+  profile_photo_detected: {
+    severity: 'positive',
+    weight: 0.5,
+    reason: 'Profilova fotka byla nalezena.',
+  },
+  account_history_detected: {
+    severity: 'positive',
+    weight: 0.5,
+    reason: 'Stranka vypada jako skutecny profil.',
+  },
+  social_graph_available: {
+    severity: 'positive',
+    weight: 0.5,
+    reason: 'Jsou videt socialni vazby nebo dosah.',
+  },
+  location_hints_detected: {
+    severity: 'positive',
+    weight: 0.25,
+    reason: 'Byly zachyceny geograficke stopy.',
+  },
+  photo_metadata_present: {
+    severity: 'positive',
+    weight: 0.5,
+    reason: 'Fotka nese pouzitelna metadata.',
+  },
+  photo_low_resolution: {
+    severity: 'negative',
+    weight: 0.75,
+    reason: 'Profilova fotka ma nizke rozliseni.',
+  },
+  photo_external_source: {
+    severity: 'negative',
+    weight: 1,
+    reason: 'Fotka pusobi jako externi nebo komercni asset.',
+  },
+  photo_screenshot_like: {
+    severity: 'negative',
+    weight: 1.25,
+    reason: 'Rozmery nebo nazev vypadaji jako screenshot.',
+  },
+  photo_heavily_compressed: {
+    severity: 'negative',
+    weight: 1,
+    reason: 'Fotka vypada jako silne komprimovany export nebo thumbnail.',
+  },
+  photo_copyright_metadata: {
+    severity: 'negative',
+    weight: 1.25,
+    reason: 'Fotka obsahuje copyright nebo autorske metadata.',
+  },
+  photo_avatar_crop_like: {
+    severity: 'positive',
+    weight: 0.5,
+    reason: 'Rozmery pripominaji bezny avatar crop.',
+  },
 };
 
 extensionApi.runtime.onInstalled.addListener(async () => {
   await ensureContextMenu();
-  await actionApi.setBadgeText({ text: "" });
+  await actionApi.setBadgeText({ text: '' });
 });
 
 extensionApi.runtime.onStartup.addListener(async () => {
@@ -66,7 +202,10 @@ extensionApi.contextMenus.onClicked.addListener(async (info, tab) => {
   const tabId = tab?.id;
   const profileContext = tabId ? await getProfileContextFromTab(tabId) : null;
   const domContext = tabId ? await getImageContextFromTab(tabId) : null;
-  const baseRecord = createProfileRecord(profileContext, info.pageUrl || tab?.url || null);
+  const baseRecord = createProfileRecord(
+    profileContext,
+    info.pageUrl || tab?.url || null
+  );
   const analysis = await analyzeImage(info.srcUrl, domContext);
   const updatedRecord = mergePhotoAnalysis(baseRecord, analysis, info.srcUrl);
 
@@ -76,28 +215,28 @@ extensionApi.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "avatar-inspector:get-active-profile") {
+  if (message?.type === 'avatar-inspector:get-active-profile') {
     getActiveProfileState()
       .then(sendResponse)
       .catch((error) => sendResponse({ error: error.message }));
     return true;
   }
 
-  if (message?.type === "avatar-inspector:update-profile") {
+  if (message?.type === 'avatar-inspector:update-profile') {
     updateProfile(message.profileKey, message.patch)
       .then(sendResponse)
       .catch((error) => sendResponse({ error: error.message }));
     return true;
   }
 
-  if (message?.type === "avatar-inspector:analyze-current-profile-photo") {
+  if (message?.type === 'avatar-inspector:analyze-current-profile-photo') {
     analyzeCurrentProfilePhoto()
       .then(sendResponse)
       .catch((error) => sendResponse({ error: error.message }));
     return true;
   }
 
-  if (message?.type === "avatar-inspector:get-last-analysis") {
+  if (message?.type === 'avatar-inspector:get-last-analysis') {
     getActiveProfileState()
       .then((state) => sendResponse(state?.profile?.photoAnalysis || null))
       .catch(() => sendResponse(null));
@@ -111,14 +250,16 @@ async function ensureContextMenu() {
   await extensionApi.contextMenus.removeAll();
   extensionApi.contextMenus.create({
     id: MENU_ID,
-    title: "Analyze Image",
-    contexts: ["image"]
+    title: 'Analyze Image',
+    contexts: ['image'],
   });
 }
 
 async function getActiveProfileState() {
   const tab = await getActiveTab();
-  const profileContext = tab?.id ? await getProfileContextFromTab(tab.id) : null;
+  const profileContext = tab?.id
+    ? await getProfileContextFromTab(tab.id)
+    : null;
   const isSupportedProfile = isSupportedProfileContext(profileContext);
   let profile = null;
 
@@ -132,32 +273,41 @@ async function getActiveProfileState() {
     return {
       profile: null,
       supported: isSupportedProfile,
-      profileContext
+      profileContext,
     };
   }
 
   return {
     profile,
     supported: isSupportedProfile,
-    profileContext
+    profileContext,
   };
 }
 
 async function analyzeCurrentProfilePhoto() {
   const tab = await getActiveTab();
   if (!tab?.id) {
-    throw new Error("Aktivni panel se nepodarilo zjistit.");
+    throw new Error('Aktivni panel se nepodarilo zjistit.');
   }
 
   const profileContext = await getProfileContextFromTab(tab.id);
-  if (!isSupportedProfileContext(profileContext) || !profileContext?.profileImage) {
-    throw new Error("Na aktualni strance se nepodarilo najit profilovou fotku.");
+  if (
+    !isSupportedProfileContext(profileContext) ||
+    !profileContext?.profileImage
+  ) {
+    throw new Error(
+      'Na aktualni strance se nepodarilo najit profilovou fotku.'
+    );
   }
 
   const domContext = await getImageContextFromTab(tab.id);
   const baseRecord = await findOrCreateProfile(profileContext, tab.url || null);
   const analysis = await analyzeImage(profileContext.profileImage, domContext);
-  const updatedRecord = mergePhotoAnalysis(baseRecord, analysis, profileContext.profileImage);
+  const updatedRecord = mergePhotoAnalysis(
+    baseRecord,
+    analysis,
+    profileContext.profileImage
+  );
 
   await upsertProfile(updatedRecord);
   await updateBadgeFromProfile(updatedRecord);
@@ -166,14 +316,17 @@ async function analyzeCurrentProfilePhoto() {
 }
 
 async function getActiveTab() {
-  const tabs = await extensionApi.tabs.query({ active: true, currentWindow: true });
+  const tabs = await extensionApi.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
   return tabs[0] || null;
 }
 
 async function getImageContextFromTab(tabId) {
   try {
     return await extensionApi.tabs.sendMessage(tabId, {
-      type: "avatar-inspector:get-last-image-context"
+      type: 'avatar-inspector:get-last-image-context',
     });
   } catch (_error) {
     return null;
@@ -183,7 +336,7 @@ async function getImageContextFromTab(tabId) {
 async function getProfileContextFromTab(tabId) {
   try {
     return await extensionApi.tabs.sendMessage(tabId, {
-      type: "avatar-inspector:get-profile-context"
+      type: 'avatar-inspector:get-profile-context',
     });
   } catch (_error) {
     return null;
@@ -194,25 +347,32 @@ async function findOrCreateProfile(profileContext, pageUrl) {
   const profileKey = buildProfileKey(profileContext);
   const { profiles = {} } = await extensionApi.storage.local.get([
     PROFILE_STORAGE_KEY,
-    LAST_PROFILE_KEY
+    LAST_PROFILE_KEY,
   ]);
 
   const existing = profiles[profileKey];
-  const merged = enrichProfileRecord(existing || createProfileRecord(profileContext, pageUrl), profileContext, pageUrl);
+  const merged = enrichProfileRecord(
+    existing || createProfileRecord(profileContext, pageUrl),
+    profileContext,
+    pageUrl
+  );
 
   await extensionApi.storage.local.set({
     [PROFILE_STORAGE_KEY]: {
       ...profiles,
-      [profileKey]: merged
+      [profileKey]: merged,
     },
-    [LAST_PROFILE_KEY]: profileKey
+    [LAST_PROFILE_KEY]: profileKey,
   });
 
   return merged;
 }
 
 async function getLastProfile() {
-  const stored = await extensionApi.storage.local.get([PROFILE_STORAGE_KEY, LAST_PROFILE_KEY]);
+  const stored = await extensionApi.storage.local.get([
+    PROFILE_STORAGE_KEY,
+    LAST_PROFILE_KEY,
+  ]);
   const profiles = stored[PROFILE_STORAGE_KEY] || {};
   const profileKey = stored[LAST_PROFILE_KEY];
   const profile = profileKey ? profiles[profileKey] || null : null;
@@ -225,22 +385,25 @@ function createProfileRecord(profileContext, pageUrl) {
   const automaticChecks = buildAutomaticChecks(profileContext, null);
   return finalizeProfileRecord({
     key,
-    platform: profileContext?.platform || "generic",
-    profileId: profileContext?.profileId || "unknown",
-    profileName: profileContext?.profileName || "Neznamy profil",
+    platform: profileContext?.platform || 'generic',
+    profileId: profileContext?.profileId || 'unknown',
+    profileName: profileContext?.profileName || 'Neznamy profil',
     pageUrl: pageUrl || profileContext?.pageUrl || null,
-    notes: "",
+    notes: '',
     manualChecks: buildDefaultManualChecks(),
     automaticChecks,
     socialGraph: buildSocialGraph(profileContext?.socialSignals),
     photoAnalysis: null,
     createdAt: timestamp,
-    updatedAt: timestamp
+    updatedAt: timestamp,
   });
 }
 
 function enrichProfileRecord(record, profileContext, pageUrl) {
-  const automaticChecks = buildAutomaticChecks(profileContext, record.photoAnalysis);
+  const automaticChecks = buildAutomaticChecks(
+    profileContext,
+    record.photoAnalysis
+  );
   return finalizeProfileRecord({
     ...record,
     platform: profileContext?.platform || record.platform,
@@ -249,31 +412,42 @@ function enrichProfileRecord(record, profileContext, pageUrl) {
     pageUrl: pageUrl || profileContext?.pageUrl || record.pageUrl,
     automaticChecks: {
       ...record.automaticChecks,
-      ...automaticChecks
+      ...automaticChecks,
     },
-    socialGraph: buildSocialGraph(profileContext?.socialSignals, record.socialGraph),
-    updatedAt: new Date().toISOString()
+    socialGraph: buildSocialGraph(
+      profileContext?.socialSignals,
+      record.socialGraph
+    ),
+    updatedAt: new Date().toISOString(),
   });
 }
 
 function buildProfileKey(profileContext) {
-  const platform = profileContext?.platform || "generic";
-  const profileId = profileContext?.profileId || sanitizeId(profileContext?.profileName) || "unknown";
+  const platform = profileContext?.platform || 'generic';
+  const profileId =
+    profileContext?.profileId ||
+    sanitizeId(profileContext?.profileName) ||
+    'unknown';
   return `${platform}:${profileId}`;
 }
 
 function isSupportedProfileContext(profileContext) {
   return Boolean(
     profileContext &&
-      profileContext.platform &&
-      profileContext.platform !== "generic" &&
-      profileContext.pageType === "profile" &&
-      (profileContext.profileId || profileContext.profileName)
+    profileContext.platform &&
+    profileContext.platform !== 'generic' &&
+    profileContext.pageType === 'profile' &&
+    (profileContext.profileId || profileContext.profileName)
   );
 }
 
 function sanitizeId(value) {
-  return value ? value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") : null;
+  return value
+    ? value
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    : null;
 }
 
 function buildDefaultManualChecks() {
@@ -289,27 +463,56 @@ function buildAutomaticChecks(profileContext, photoAnalysis) {
 
   return {
     profile_photo_analyzed: Boolean(photoAnalysis),
-    photo_low_resolution: indicators.some((indicator) => indicator.key === "low_resolution"),
-    photo_external_source: indicators.some((indicator) => indicator.key.endsWith("_cdn") || indicator.key.endsWith("_asset")),
-    photo_metadata_present: indicators.some((indicator) => indicator.key === "camera_model_present" || indicator.key === "date_taken_present"),
-    photo_screenshot_like: indicators.some((indicator) => indicator.key === "screenshot_like"),
-    photo_heavily_compressed: indicators.some((indicator) => indicator.key === "high_compression"),
-    photo_copyright_metadata: indicators.some((indicator) => indicator.key === "copyright_present"),
-    photo_avatar_crop_like: indicators.some((indicator) => indicator.key === "avatar_crop_like"),
+    photo_low_resolution: indicators.some(
+      (indicator) => indicator.key === 'low_resolution'
+    ),
+    photo_external_source: indicators.some(
+      (indicator) =>
+        indicator.key.endsWith('_cdn') || indicator.key.endsWith('_asset')
+    ),
+    photo_metadata_present: indicators.some(
+      (indicator) =>
+        indicator.key === 'camera_model_present' ||
+        indicator.key === 'date_taken_present'
+    ),
+    photo_screenshot_like: indicators.some(
+      (indicator) => indicator.key === 'screenshot_like'
+    ),
+    photo_heavily_compressed: indicators.some(
+      (indicator) => indicator.key === 'high_compression'
+    ),
+    photo_copyright_metadata: indicators.some(
+      (indicator) => indicator.key === 'copyright_present'
+    ),
+    photo_avatar_crop_like: indicators.some(
+      (indicator) => indicator.key === 'avatar_crop_like'
+    ),
     profile_name_detected: Boolean(profileContext?.profileName),
     profile_photo_detected: Boolean(profileContext?.profileImage),
-    account_history_detected: Boolean(profileContext?.pageType === "profile"),
-    social_graph_available: Boolean(socialSignals.friendsLabel || socialSignals.followersLabel || socialSignals.sharedServersLabel),
-    location_hints_detected: Array.isArray(socialSignals.locationHints) && socialSignals.locationHints.length > 0
+    account_history_detected: Boolean(profileContext?.pageType === 'profile'),
+    social_graph_available: Boolean(
+      socialSignals.friendsLabel ||
+      socialSignals.followersLabel ||
+      socialSignals.sharedServersLabel
+    ),
+    location_hints_detected:
+      Array.isArray(socialSignals.locationHints) &&
+      socialSignals.locationHints.length > 0,
   };
 }
 
 function buildSocialGraph(socialSignals, currentGraph = {}) {
   return {
-    friendsLabel: socialSignals?.friendsLabel || currentGraph.friendsLabel || null,
-    followersLabel: socialSignals?.followersLabel || currentGraph.followersLabel || null,
-    sharedServersLabel: socialSignals?.sharedServersLabel || currentGraph.sharedServersLabel || null,
-    locationHints: socialSignals?.locationHints || currentGraph.locationHints || []
+    friendsLabel:
+      socialSignals?.friendsLabel || currentGraph.friendsLabel || null,
+    followersLabel:
+      socialSignals?.followersLabel || currentGraph.followersLabel || null,
+    sharedServersLabel:
+      socialSignals?.sharedServersLabel ||
+      currentGraph.sharedServersLabel ||
+      null,
+    locationHints:
+      socialSignals?.locationHints || currentGraph.locationHints || [],
   };
 }
 
@@ -319,7 +522,7 @@ function mergePhotoAnalysis(record, analysis, srcUrl) {
     photoAnalysis: {
       ...analysis,
       analyzedAt: new Date().toISOString(),
-      srcUrl
+      srcUrl,
     },
     automaticChecks: {
       ...record.automaticChecks,
@@ -327,13 +530,13 @@ function mergePhotoAnalysis(record, analysis, srcUrl) {
         {
           profileName: record.profileName,
           profileImage: srcUrl,
-          pageType: "profile",
-          socialSignals: record.socialGraph
+          pageType: 'profile',
+          socialSignals: record.socialGraph,
         },
         analysis
-      )
+      ),
     },
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -343,14 +546,16 @@ async function updateProfile(profileKey, patch) {
   const current = profiles[profileKey];
 
   if (!current) {
-    throw new Error("Profil se nepodarilo najit.");
+    throw new Error('Profil se nepodarilo najit.');
   }
 
   const updated = finalizeProfileRecord({
     ...current,
-    notes: typeof patch?.notes === "string" ? patch.notes : current.notes,
-    manualChecks: patch?.manualChecks ? { ...current.manualChecks, ...patch.manualChecks } : current.manualChecks,
-    updatedAt: new Date().toISOString()
+    notes: typeof patch?.notes === 'string' ? patch.notes : current.notes,
+    manualChecks: patch?.manualChecks
+      ? { ...current.manualChecks, ...patch.manualChecks }
+      : current.manualChecks,
+    updatedAt: new Date().toISOString(),
   });
 
   await upsertProfile(updated);
@@ -361,7 +566,7 @@ async function updateProfile(profileKey, patch) {
 function finalizeProfileRecord(profile) {
   return {
     ...profile,
-    assessment: buildProfileAssessment(profile)
+    assessment: buildProfileAssessment(profile),
   };
 }
 
@@ -385,7 +590,7 @@ function buildProfileAssessment(profile) {
       severity: rule.severity,
       weight: rule.weight,
       reason: rule.reason,
-      source: "manual"
+      source: 'manual',
     });
   }
 
@@ -405,45 +610,47 @@ function buildProfileAssessment(profile) {
       severity: rule.severity,
       weight: rule.weight,
       reason: rule.reason,
-      source: "automatic"
+      source: 'automatic',
     });
   }
 
-  if (profile.photoAnalysis?.verdict === "Vyrazne nesrovnalosti") {
+  if (profile.photoAnalysis?.verdict === 'Vyrazne nesrovnalosti') {
     contributors.push({
-      key: "photo_verdict",
-      label: "Analyza fotky",
-      severity: "negative",
+      key: 'photo_verdict',
+      label: 'Analyza fotky',
+      severity: 'negative',
       weight: 1.5,
-      reason: profile.photoAnalysis.summary || "Fotka ukazuje vyrazne nesrovnalosti.",
-      source: "photo"
+      reason:
+        profile.photoAnalysis.summary || 'Fotka ukazuje vyrazne nesrovnalosti.',
+      source: 'photo',
     });
-  } else if (profile.photoAnalysis?.verdict === "Vyzaduje pozornost") {
+  } else if (profile.photoAnalysis?.verdict === 'Vyzaduje pozornost') {
     contributors.push({
-      key: "photo_verdict",
-      label: "Analyza fotky",
-      severity: "negative",
+      key: 'photo_verdict',
+      label: 'Analyza fotky',
+      severity: 'negative',
       weight: 0.75,
-      reason: profile.photoAnalysis.summary || "Fotka vyzaduje pozornost.",
-      source: "photo"
+      reason: profile.photoAnalysis.summary || 'Fotka vyzaduje pozornost.',
+      source: 'photo',
     });
-  } else if (profile.photoAnalysis?.verdict === "Bez zjevnych problemu") {
+  } else if (profile.photoAnalysis?.verdict === 'Bez zjevnych problemu') {
     contributors.push({
-      key: "photo_verdict",
-      label: "Analyza fotky",
-      severity: "positive",
+      key: 'photo_verdict',
+      label: 'Analyza fotky',
+      severity: 'positive',
       weight: 0.5,
-      reason: profile.photoAnalysis.summary || "Fotka nema zjevne problemove znaky.",
-      source: "photo"
+      reason:
+        profile.photoAnalysis.summary || 'Fotka nema zjevne problemove znaky.',
+      source: 'photo',
     });
   }
 
   const scoring = contributors.reduce(
     (accumulator, contributor) => {
-      if (contributor.severity === "negative") {
+      if (contributor.severity === 'negative') {
         accumulator.negative += 1;
         accumulator.negativeWeight += contributor.weight;
-      } else if (contributor.severity === "positive") {
+      } else if (contributor.severity === 'positive') {
         accumulator.positive += 1;
         accumulator.positiveWeight += contributor.weight;
       } else {
@@ -452,16 +659,22 @@ function buildProfileAssessment(profile) {
 
       return accumulator;
     },
-    { positive: 0, negative: 0, neutral: 0, positiveWeight: 0, negativeWeight: 0 }
+    {
+      positive: 0,
+      negative: 0,
+      neutral: 0,
+      positiveWeight: 0,
+      negativeWeight: 0,
+    }
   );
 
   const score = roundScore(scoring.positiveWeight - scoring.negativeWeight);
-  let verdict = "Bez zjevnych problemu";
+  let verdict = 'Bez zjevnych problemu';
 
   if (scoring.negativeWeight >= 3 || score <= -2) {
-    verdict = "Vyrazne nesrovnalosti";
+    verdict = 'Vyrazne nesrovnalosti';
   } else if (scoring.negativeWeight >= 1 || score < 0) {
-    verdict = "Vyzaduje pozornost";
+    verdict = 'Vyzaduje pozornost';
   }
 
   return {
@@ -469,17 +682,17 @@ function buildProfileAssessment(profile) {
     score,
     scoring,
     contributors,
-    summary: buildAssessmentSummary(contributors, verdict)
+    summary: buildAssessmentSummary(contributors, verdict),
   };
 }
 
 function buildAssessmentSummary(contributors, verdict) {
   if (contributors.length === 0) {
-    return "Zatim nejsou k dispozici signaly pro celkove hodnoceni.";
+    return 'Zatim nejsou k dispozici signaly pro celkove hodnoceni.';
   }
 
   const primaryNegative = contributors
-    .filter((contributor) => contributor.severity === "negative")
+    .filter((contributor) => contributor.severity === 'negative')
     .sort((left, right) => right.weight - left.weight)[0];
 
   if (primaryNegative) {
@@ -487,7 +700,7 @@ function buildAssessmentSummary(contributors, verdict) {
   }
 
   const primaryPositive = contributors
-    .filter((contributor) => contributor.severity === "positive")
+    .filter((contributor) => contributor.severity === 'positive')
     .sort((left, right) => right.weight - left.weight)[0];
 
   if (primaryPositive) {
@@ -498,14 +711,16 @@ function buildAssessmentSummary(contributors, verdict) {
 }
 
 function getCheckDefinition(key) {
-  return manualCheckDefinitions.find((definition) => definition.key === key) || null;
+  return (
+    manualCheckDefinitions.find((definition) => definition.key === key) || null
+  );
 }
 
 function formatCheckLabel(key) {
   return key
-    .split("_")
+    .split('_')
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
+    .join(' ');
 }
 
 function roundScore(value) {
@@ -518,9 +733,9 @@ async function upsertProfile(profile) {
   await extensionApi.storage.local.set({
     [PROFILE_STORAGE_KEY]: {
       ...profiles,
-      [profile.key]: profile
+      [profile.key]: profile,
     },
-    [LAST_PROFILE_KEY]: profile.key
+    [LAST_PROFILE_KEY]: profile.key,
   });
 }
 
@@ -536,11 +751,11 @@ async function analyzeImage(srcUrl, domContext) {
     return buildAnalysis({
       srcUrl,
       indicators: [],
-      warnings: ["Image URL could not be parsed."],
+      warnings: ['Image URL could not be parsed.'],
       dimensions: null,
       metadata: {
-        domContext: domContext || null
-      }
+        domContext: domContext || null,
+      },
     });
   }
 
@@ -557,51 +772,70 @@ async function analyzeImage(srcUrl, domContext) {
 
     if (shortEdge <= rules.thresholds.lowResolution.maxShortEdge) {
       indicators.push({
-        key: "low_resolution",
-        label: "Low resolution",
-        severity: "negative",
+        key: 'low_resolution',
+        label: 'Low resolution',
+        severity: 'negative',
         weight: 1,
-        reason: `Short edge is ${shortEdge} px.`
+        reason: `Short edge is ${shortEdge} px.`,
       });
     }
 
     if (Math.abs(width - height) <= rules.thresholds.squareTolerance) {
       indicators.push({
-        key: "square_avatar",
-        label: "Square avatar-like crop",
-        severity: "neutral",
+        key: 'square_avatar',
+        label: 'Square avatar-like crop',
+        severity: 'neutral',
         weight: 0,
-        reason: `Dimensions ${width}x${height} resemble a profile image crop.`
+        reason: `Dimensions ${width}x${height} resemble a profile image crop.`,
       });
     }
 
-    if (isAvatarLikeDimensions(shortEdge, aspectRatio, rules.thresholds.avatarLike)) {
+    if (
+      isAvatarLikeDimensions(
+        shortEdge,
+        aspectRatio,
+        rules.thresholds.avatarLike
+      )
+    ) {
       indicators.push({
-        key: "avatar_crop_like",
-        label: "Avatar-like dimensions",
-        severity: "positive",
+        key: 'avatar_crop_like',
+        label: 'Avatar-like dimensions',
+        severity: 'positive',
         weight: 0.5,
-        reason: `Dimensions ${width}x${height} fit a typical avatar crop.`
+        reason: `Dimensions ${width}x${height} fit a typical avatar crop.`,
       });
     }
 
-    if (isScreenshotLikeDimensions(shortEdge, aspectRatio, rules.thresholds.screenshotLike)) {
+    if (
+      isScreenshotLikeDimensions(
+        shortEdge,
+        aspectRatio,
+        rules.thresholds.screenshotLike
+      )
+    ) {
       indicators.push({
-        key: "screenshot_like",
-        label: "Screenshot-like dimensions",
-        severity: "negative",
+        key: 'screenshot_like',
+        label: 'Screenshot-like dimensions',
+        severity: 'negative',
         weight: 1.25,
-        reason: `Dimensions ${width}x${height} resemble a screen capture ratio.`
+        reason: `Dimensions ${width}x${height} resemble a screen capture ratio.`,
       });
     }
 
-    if (isHighlyCompressedImage(imageInfo.fileSize, width, height, rules.thresholds.compression)) {
+    if (
+      isHighlyCompressedImage(
+        imageInfo.fileSize,
+        width,
+        height,
+        rules.thresholds.compression
+      )
+    ) {
       indicators.push({
-        key: "high_compression",
-        label: "Highly compressed image",
-        severity: "negative",
+        key: 'high_compression',
+        label: 'Highly compressed image',
+        severity: 'negative',
         weight: 1,
-        reason: `File size ${formatKilobytes(imageInfo.fileSize)} KB is very low for ${width}x${height}.`
+        reason: `File size ${formatKilobytes(imageInfo.fileSize)} KB is very low for ${width}x${height}.`,
       });
     }
   } else if (imageInfo.error) {
@@ -610,28 +844,30 @@ async function analyzeImage(srcUrl, domContext) {
 
   if (domContext?.alt) {
     indicators.push({
-      key: "dom_alt_text",
-      label: "DOM context captured",
-      severity: "positive",
+      key: 'dom_alt_text',
+      label: 'DOM context captured',
+      severity: 'positive',
       weight: 0.5,
-      reason: `Found alt text: "${truncate(domContext.alt, 80)}".`
+      reason: `Found alt text: "${truncate(domContext.alt, 80)}".`,
     });
   }
 
   if (domContext?.title) {
     indicators.push({
-      key: "dom_title_text",
-      label: "Image title captured",
-      severity: "neutral",
+      key: 'dom_title_text',
+      label: 'Image title captured',
+      severity: 'neutral',
       weight: 0,
-      reason: `Found title attribute: "${truncate(domContext.title, 80)}".`
+      reason: `Found title attribute: "${truncate(domContext.title, 80)}".`,
     });
   }
 
   if (!exifrApi?.parse) {
-    warnings.push("EXIF parser is not available in the current background context.");
+    warnings.push(
+      'EXIF parser is not available in the current background context.'
+    );
   } else if (!imageInfo.metadataAvailable) {
-    warnings.push("No EXIF/IPTC/XMP metadata were found in this image.");
+    warnings.push('No EXIF/IPTC/XMP metadata were found in this image.');
   }
 
   indicators.push(...buildMetadataIndicators(imageInfo.metadata));
@@ -645,14 +881,14 @@ async function analyzeImage(srcUrl, domContext) {
       contentType: imageInfo.contentType,
       fileSize: imageInfo.fileSize,
       imageMetadata: imageInfo.metadata,
-      domContext: domContext || null
-    }
+      domContext: domContext || null,
+    },
   });
 }
 
 async function inspectImage(srcUrl) {
   try {
-    const response = await fetch(srcUrl, { mode: "cors" });
+    const response = await fetch(srcUrl, { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -664,12 +900,13 @@ async function inspectImage(srcUrl) {
     return {
       dimensions: {
         width: bitmap.width,
-        height: bitmap.height
+        height: bitmap.height,
       },
-      contentType: blob.type || response.headers.get("content-type") || "unknown",
+      contentType:
+        blob.type || response.headers.get('content-type') || 'unknown',
       fileSize: blob.size,
       metadataAvailable: Boolean(metadata),
-      metadata
+      metadata,
     };
   } catch (error) {
     return {
@@ -678,7 +915,7 @@ async function inspectImage(srcUrl) {
       fileSize: null,
       metadataAvailable: false,
       metadata: null,
-      error: `Image fetch failed: ${error.message}`
+      error: `Image fetch failed: ${error.message}`,
     };
   }
 }
@@ -701,10 +938,12 @@ async function extractMetadata(blob) {
       cameraMake: parsed.Make || null,
       cameraModel: parsed.Model || null,
       lensModel: parsed.LensModel || null,
-      dateTaken: normalizeDate(parsed.DateTimeOriginal || parsed.CreateDate || parsed.ModifyDate),
-      latitude: typeof parsed.latitude === "number" ? parsed.latitude : null,
-      longitude: typeof parsed.longitude === "number" ? parsed.longitude : null,
-      rawTagCount: Object.keys(parsed).length
+      dateTaken: normalizeDate(
+        parsed.DateTimeOriginal || parsed.CreateDate || parsed.ModifyDate
+      ),
+      latitude: typeof parsed.latitude === 'number' ? parsed.latitude : null,
+      longitude: typeof parsed.longitude === 'number' ? parsed.longitude : null,
+      rawTagCount: Object.keys(parsed).length,
     };
   } catch (_error) {
     return null;
@@ -715,8 +954,12 @@ function matchSourceRules(url, sourceRules) {
   const matches = [];
 
   for (const sourceRule of sourceRules) {
-    const hostMatch = sourceRule.hosts.some((host) => url.hostname.includes(host));
-    const pathMatch = sourceRule.pathFragments.some((fragment) => url.pathname.includes(fragment));
+    const hostMatch = sourceRule.hosts.some((host) =>
+      url.hostname.includes(host)
+    );
+    const pathMatch = sourceRule.pathFragments.some((fragment) =>
+      url.pathname.includes(fragment)
+    );
 
     if (hostMatch || pathMatch) {
       matches.push({
@@ -724,7 +967,7 @@ function matchSourceRules(url, sourceRules) {
         label: sourceRule.label,
         severity: sourceRule.severity,
         weight: sourceRule.weight ?? getDefaultWeight(sourceRule.severity),
-        reason: sourceRule.reason
+        reason: sourceRule.reason,
       });
     }
   }
@@ -737,10 +980,10 @@ function buildAnalysis({ srcUrl, indicators, warnings, dimensions, metadata }) {
     (accumulator, indicator) => {
       const weight = indicator.weight ?? getDefaultWeight(indicator.severity);
 
-      if (indicator.severity === "negative") {
+      if (indicator.severity === 'negative') {
         accumulator.negative += 1;
         accumulator.negativeWeight += weight;
-      } else if (indicator.severity === "positive") {
+      } else if (indicator.severity === 'positive') {
         accumulator.positive += 1;
         accumulator.positiveWeight += weight;
       } else {
@@ -748,16 +991,22 @@ function buildAnalysis({ srcUrl, indicators, warnings, dimensions, metadata }) {
       }
       return accumulator;
     },
-    { positive: 0, negative: 0, neutral: 0, positiveWeight: 0, negativeWeight: 0 }
+    {
+      positive: 0,
+      negative: 0,
+      neutral: 0,
+      positiveWeight: 0,
+      negativeWeight: 0,
+    }
   );
 
   const finalScore = scoring.positiveWeight - scoring.negativeWeight;
-  let verdict = "Bez zjevnych problemu";
+  let verdict = 'Bez zjevnych problemu';
 
   if (scoring.negativeWeight >= 3) {
-    verdict = "Vyrazne nesrovnalosti";
+    verdict = 'Vyrazne nesrovnalosti';
   } else if (scoring.negativeWeight >= 1) {
-    verdict = "Vyzaduje pozornost";
+    verdict = 'Vyzaduje pozornost';
   }
 
   return {
@@ -769,13 +1018,13 @@ function buildAnalysis({ srcUrl, indicators, warnings, dimensions, metadata }) {
     indicators,
     warnings,
     metadata,
-    summary: buildSummary(indicators, warnings)
+    summary: buildSummary(indicators, warnings),
   };
 }
 
 function buildSummary(indicators, warnings) {
   if (indicators.length === 0 && warnings.length === 0) {
-    return "Zatim nebyly nalezeny vyrazne signaly.";
+    return 'Zatim nebyly nalezeny vyrazne signaly.';
   }
 
   const topIndicator = [...indicators].sort((left, right) => {
@@ -791,7 +1040,7 @@ function buildSummary(indicators, warnings) {
 }
 
 function getDefaultWeight(severity) {
-  if (severity === "positive" || severity === "negative") {
+  if (severity === 'positive' || severity === 'negative') {
     return 1;
   }
 
@@ -807,41 +1056,42 @@ function buildMetadataIndicators(metadata) {
 
   if (metadata.cameraModel || metadata.cameraMake) {
     indicators.push({
-      key: "camera_model_present",
-      label: "Camera metadata present",
-      severity: "positive",
+      key: 'camera_model_present',
+      label: 'Camera metadata present',
+      severity: 'positive',
       weight: 1,
-      reason: `${metadata.cameraMake || ""} ${metadata.cameraModel || ""}`.trim()
+      reason:
+        `${metadata.cameraMake || ''} ${metadata.cameraModel || ''}`.trim(),
     });
   }
 
   if (metadata.dateTaken) {
     indicators.push({
-      key: "date_taken_present",
-      label: "Capture date present",
-      severity: "positive",
+      key: 'date_taken_present',
+      label: 'Capture date present',
+      severity: 'positive',
       weight: 0.5,
-      reason: metadata.dateTaken
+      reason: metadata.dateTaken,
     });
   }
 
   if (metadata.software) {
     indicators.push({
-      key: "editing_software_present",
-      label: "Software tag present",
-      severity: "negative",
+      key: 'editing_software_present',
+      label: 'Software tag present',
+      severity: 'negative',
       weight: 0.75,
-      reason: metadata.software
+      reason: metadata.software,
     });
   }
 
   if (metadata.copyright) {
     indicators.push({
-      key: "copyright_present",
-      label: "Copyright metadata present",
-      severity: "negative",
+      key: 'copyright_present',
+      label: 'Copyright metadata present',
+      severity: 'negative',
       weight: 0.75,
-      reason: metadata.copyright
+      reason: metadata.copyright,
     });
   }
 
@@ -850,16 +1100,24 @@ function buildMetadataIndicators(metadata) {
 
 function buildUrlTextIndicators(url, domContext) {
   const indicators = [];
-  const screenshotKeywordPattern = /\b(screenshot|screen-shot|screen_shot|snip|capture|screen capture)\b/i;
-  const textBlob = [url.pathname, url.search, domContext?.alt, domContext?.title].filter(Boolean).join(" ");
+  const screenshotKeywordPattern =
+    /\b(screenshot|screen-shot|screen_shot|snip|capture|screen capture)\b/i;
+  const textBlob = [
+    url.pathname,
+    url.search,
+    domContext?.alt,
+    domContext?.title,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   if (screenshotKeywordPattern.test(textBlob)) {
     indicators.push({
-      key: "screenshot_like",
-      label: "Screenshot-like naming",
-      severity: "negative",
+      key: 'screenshot_like',
+      label: 'Screenshot-like naming',
+      severity: 'negative',
       weight: 1,
-      reason: "Nazev souboru nebo okoli obrazku pripomina screenshot."
+      reason: 'Nazev souboru nebo okoli obrazku pripomina screenshot.',
     });
   }
 
@@ -879,7 +1137,9 @@ function isScreenshotLikeDimensions(shortEdge, aspectRatio, threshold) {
     return false;
   }
 
-  return threshold.aspectRatios.some((ratio) => Math.abs(aspectRatio - ratio) <= threshold.tolerance);
+  return threshold.aspectRatios.some(
+    (ratio) => Math.abs(aspectRatio - ratio) <= threshold.tolerance
+  );
 }
 
 function isHighlyCompressedImage(fileSize, width, height, threshold) {
@@ -909,7 +1169,7 @@ function normalizeDate(value) {
     return value.toISOString();
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return value;
   }
 
@@ -921,25 +1181,25 @@ async function loadRules() {
     return cachedRules;
   }
 
-  const response = await fetch(extensionApi.runtime.getURL("rules.json"));
+  const response = await fetch(extensionApi.runtime.getURL('rules.json'));
   cachedRules = await response.json();
   return cachedRules;
 }
 
 async function updateBadgeFromProfile(profile) {
   const verdict = profile?.assessment?.verdict;
-  let text = "NOTE";
-  let color = "#6b7280";
+  let text = 'NOTE';
+  let color = '#6b7280';
 
-  if (verdict === "Vyrazne nesrovnalosti") {
-    text = "WARN";
-    color = "#b91c1c";
-  } else if (verdict === "Vyzaduje pozornost") {
-    text = "MIX";
-    color = "#b45309";
-  } else if (verdict === "Bez zjevnych problemu") {
-    text = "OK";
-    color = "#047857";
+  if (verdict === 'Vyrazne nesrovnalosti') {
+    text = 'WARN';
+    color = '#b91c1c';
+  } else if (verdict === 'Vyzaduje pozornost') {
+    text = 'MIX';
+    color = '#b45309';
+  } else if (verdict === 'Bez zjevnych problemu') {
+    text = 'OK';
+    color = '#047857';
   }
 
   await actionApi.setBadgeText({ text });
@@ -947,7 +1207,7 @@ async function updateBadgeFromProfile(profile) {
 }
 
 async function openResultsView() {
-  if (typeof actionApi?.openPopup === "function") {
+  if (typeof actionApi?.openPopup === 'function') {
     try {
       await actionApi.openPopup();
       return;
@@ -957,7 +1217,7 @@ async function openResultsView() {
   }
 
   await extensionApi.tabs.create({
-    url: extensionApi.runtime.getURL("popup.html")
+    url: extensionApi.runtime.getURL('popup.html'),
   });
 }
 

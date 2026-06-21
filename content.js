@@ -2,9 +2,10 @@ const extensionApi = globalThis.browser ?? globalThis.chrome;
 let lastImageContext = null;
 
 document.addEventListener(
-  "contextmenu",
+  'contextmenu',
   (event) => {
-    const image = event.target instanceof Element ? event.target.closest("img") : null;
+    const image =
+      event.target instanceof Element ? event.target.closest('img') : null;
     if (!image) {
       lastImageContext = null;
       return;
@@ -16,12 +17,12 @@ document.addEventListener(
 );
 
 extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "avatar-inspector:get-last-image-context") {
+  if (message?.type === 'avatar-inspector:get-last-image-context') {
     sendResponse(lastImageContext);
     return true;
   }
 
-  if (message?.type === "avatar-inspector:get-profile-context") {
+  if (message?.type === 'avatar-inspector:get-profile-context') {
     sendResponse(detectProfileContext());
     return true;
   }
@@ -32,12 +33,12 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 function buildImageContext(image) {
   return {
     src: image.currentSrc || image.src || null,
-    alt: image.alt || "",
-    title: image.title || "",
+    alt: image.alt || '',
+    title: image.title || '',
     naturalWidth: image.naturalWidth || null,
     naturalHeight: image.naturalHeight || null,
     displayedWidth: image.clientWidth || null,
-    displayedHeight: image.clientHeight || null
+    displayedHeight: image.clientHeight || null,
   };
 }
 
@@ -58,88 +59,117 @@ function detectProfileContext() {
     profileImage,
     pageUrl: url.href,
     socialSignals,
-    pageTitle: document.title || ""
+    pageTitle: document.title || '',
   };
 }
 
 function detectPlatform(hostname) {
-  if (hostname.includes("facebook.com") || hostname.includes("fb.com")) {
-    return "facebook";
+  if (hostname.includes('facebook.com') || hostname.includes('fb.com')) {
+    return 'facebook';
   }
 
-  if (hostname.includes("instagram.com")) {
-    return "instagram";
+  if (hostname.includes('instagram.com')) {
+    return 'instagram';
   }
 
-  if (hostname.includes("discord.com") || hostname.includes("discordapp.com")) {
-    return "discord";
+  if (hostname.includes('discord.com') || hostname.includes('discordapp.com')) {
+    return 'discord';
   }
 
-  if (hostname.includes("telegram.me") || hostname.includes("t.me") || hostname.includes("telegram.org")) {
-    return "telegram";
+  if (
+    hostname.includes('telegram.me') ||
+    hostname.includes('t.me') ||
+    hostname.includes('telegram.org')
+  ) {
+    return 'telegram';
   }
 
-  if (hostname.includes("reddit.com")) {
-    return "reddit";
+  if (hostname.includes('reddit.com')) {
+    return 'reddit';
   }
 
-  return "generic";
+  return 'generic';
 }
 
 function detectPageType(platform, url) {
   const pathname = url.pathname;
 
-  if (platform === "facebook") {
-    if (pathname === "/profile.php" || pathname.split("/").filter(Boolean).length >= 1) {
-      return "profile";
+  if (platform === 'facebook') {
+    if (
+      pathname === '/profile.php' ||
+      pathname.split('/').filter(Boolean).length >= 1
+    ) {
+      return 'profile';
     }
   }
 
-  if (platform === "instagram") {
-    const firstSegment = pathname.split("/").filter(Boolean)[0];
-    const nonProfileSegments = new Set(["p", "reel", "reels", "stories", "explore", "accounts", "direct"]);
-    return firstSegment && !nonProfileSegments.has(firstSegment) ? "profile" : "other";
+  if (platform === 'instagram') {
+    const firstSegment = pathname.split('/').filter(Boolean)[0];
+    const nonProfileSegments = new Set([
+      'p',
+      'reel',
+      'reels',
+      'stories',
+      'explore',
+      'accounts',
+      'direct',
+    ]);
+    return firstSegment && !nonProfileSegments.has(firstSegment)
+      ? 'profile'
+      : 'other';
   }
 
-  if (platform === "reddit") {
-    return pathname.startsWith("/user/") || pathname.startsWith("/u/") ? "profile" : "other";
+  if (platform === 'reddit') {
+    return pathname.startsWith('/user/') || pathname.startsWith('/u/')
+      ? 'profile'
+      : 'other';
   }
 
-  if (platform === "telegram") {
-    return pathname.split("/").filter(Boolean).length >= 1 ? "profile" : "other";
+  if (platform === 'telegram') {
+    return pathname.split('/').filter(Boolean).length >= 1
+      ? 'profile'
+      : 'other';
   }
 
-  if (platform === "discord") {
-    return "profile";
+  if (platform === 'discord') {
+    return 'profile';
   }
 
-  return "other";
+  return 'other';
 }
 
 function extractProfileId(platform, url) {
-  const segments = url.pathname.split("/").filter(Boolean);
+  const segments = url.pathname.split('/').filter(Boolean);
 
-  if (platform === "facebook") {
-    if (url.pathname === "/profile.php") {
-      return url.searchParams.get("id");
+  if (platform === 'facebook') {
+    if (url.pathname === '/profile.php') {
+      return url.searchParams.get('id');
     }
 
     return segments[0] || null;
   }
 
-  if (platform === "instagram") {
+  if (platform === 'instagram') {
     const firstSegment = segments[0];
-    const blocked = new Set(["p", "reel", "reels", "stories", "explore", "accounts", "direct"]);
+    const blocked = new Set([
+      'p',
+      'reel',
+      'reels',
+      'stories',
+      'explore',
+      'accounts',
+      'direct',
+    ]);
     return firstSegment && !blocked.has(firstSegment) ? firstSegment : null;
   }
 
-  if (platform === "reddit") {
-    if (segments[0] === "user" || segments[0] === "u") {
+  if (platform === 'reddit') {
+    if (segments[0] === 'user' || segments[0] === 'u') {
       return segments[1] || null;
     }
   }
 
-  if (platform === "telegram") {
+  if (platform === 'telegram') {
     return segments[0] || null;
   }
 
@@ -150,17 +180,20 @@ function extractProfileName(platform) {
   const metaSelectors = [
     'meta[property="og:title"]',
     'meta[name="twitter:title"]',
-    'meta[name="title"]'
+    'meta[name="title"]',
   ];
 
   for (const selector of metaSelectors) {
-    const content = document.querySelector(selector)?.getAttribute("content")?.trim();
+    const content = document
+      .querySelector(selector)
+      ?.getAttribute('content')
+      ?.trim();
     if (content) {
       return cleanupName(content, platform);
     }
   }
 
-  const heading = document.querySelector("h1");
+  const heading = document.querySelector('h1');
   if (heading?.textContent?.trim()) {
     return cleanupName(heading.textContent.trim(), platform);
   }
@@ -174,14 +207,14 @@ function extractProfileName(platform) {
 
 function cleanupName(value, platform) {
   const separators = {
-    facebook: ["|"],
-    instagram: ["•", "(", "|"],
-    reddit: [" : ", " :"],
-    telegram: ["|"]
+    facebook: ['|'],
+    instagram: ['•', '(', '|'],
+    reddit: [' : ', ' :'],
+    telegram: ['|'],
   };
 
-  const platformSeparators = separators[platform] || ["|", "-"];
-  let normalized = value.replace(/\s+/g, " ").trim();
+  const platformSeparators = separators[platform] || ['|', '-'];
+  let normalized = value.replace(/\s+/g, ' ').trim();
 
   for (const separator of platformSeparators) {
     if (normalized.includes(separator)) {
@@ -205,21 +238,24 @@ function extractProfilePhoto(platform) {
       'img[alt*="profile picture" i]',
       'img[alt*="profil" i]',
       'img[src*="scontent" i]',
-      'img[src*="fbcdn" i]'
+      'img[src*="fbcdn" i]',
     ],
     instagram: [
       'meta[property="og:image"]',
       'img[alt*="profile picture" i]',
-      'header img'
+      'header img',
     ],
     reddit: ['meta[property="og:image"]', 'img[alt*="avatar" i]'],
     telegram: ['meta[property="og:image"]'],
-    discord: ['img[alt*="avatar" i]', 'img[class*="avatar"]']
+    discord: ['img[alt*="avatar" i]', 'img[class*="avatar"]'],
   };
 
-  const selectors = selectorsByPlatform[platform] || ['meta[property="og:image"]', "img"];
+  const selectors = selectorsByPlatform[platform] || [
+    'meta[property="og:image"]',
+    'img',
+  ];
 
-  if (platform === "facebook") {
+  if (platform === 'facebook') {
     return extractFacebookProfilePhoto(selectors);
   }
 
@@ -235,8 +271,10 @@ function extractProfilePhoto(platform) {
 }
 
 function extractFacebookProfilePhoto(selectors) {
-  const headImage = document.querySelector('meta[property="og:image"], meta[name="twitter:image"]')?.getAttribute("content");
-  if (headImage && !headImage.startsWith("data:")) {
+  const headImage = document
+    .querySelector('meta[property="og:image"], meta[name="twitter:image"]')
+    ?.getAttribute('content');
+  if (headImage && !headImage.startsWith('data:')) {
     return headImage;
   }
 
@@ -252,7 +290,7 @@ function extractFacebookProfilePhoto(selectors) {
 
       candidates.push({
         source,
-        score: scoreFacebookPhotoCandidate(element, source)
+        score: scoreFacebookPhotoCandidate(element, source),
       });
     }
   }
@@ -270,11 +308,13 @@ function getElementImageSource(element) {
   }
 
   if (element instanceof HTMLMetaElement) {
-    return element.getAttribute("content") || null;
+    return element.getAttribute('content') || null;
   }
 
   if (element instanceof SVGImageElement) {
-    return element.getAttribute("href") || element.getAttribute("xlink:href") || null;
+    return (
+      element.getAttribute('href') || element.getAttribute('xlink:href') || null
+    );
   }
 
   if (element instanceof HTMLImageElement) {
@@ -289,25 +329,35 @@ function scoreFacebookPhotoCandidate(element, source) {
   const sourceText = source.toLowerCase();
   const altText = getElementAltText(element).toLowerCase();
   const ariaLabel = getNearestLabel(element).toLowerCase();
-  const rect = typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
-  const width = element instanceof HTMLImageElement ? element.naturalWidth || element.clientWidth || 0 : rect?.width || 0;
-  const height = element instanceof HTMLImageElement ? element.naturalHeight || element.clientHeight || 0 : rect?.height || 0;
+  const rect =
+    typeof element.getBoundingClientRect === 'function'
+      ? element.getBoundingClientRect()
+      : null;
+  const width =
+    element instanceof HTMLImageElement
+      ? element.naturalWidth || element.clientWidth || 0
+      : rect?.width || 0;
+  const height =
+    element instanceof HTMLImageElement
+      ? element.naturalHeight || element.clientHeight || 0
+      : rect?.height || 0;
   const shortEdge = Math.min(width || 0, height || 0);
-  const aspectDelta = width && height ? Math.abs(width - height) / Math.max(width, height) : 1;
+  const aspectDelta =
+    width && height ? Math.abs(width - height) / Math.max(width, height) : 1;
 
-  if (sourceText.includes("fbcdn") || sourceText.includes("scontent")) {
+  if (sourceText.includes('fbcdn') || sourceText.includes('scontent')) {
     score += 2;
   }
 
-  if (sourceText.includes("profile") || sourceText.includes("profile_pic")) {
+  if (sourceText.includes('profile') || sourceText.includes('profile_pic')) {
     score += 2;
   }
 
-  if (altText.includes("profile picture") || altText.includes("profil")) {
+  if (altText.includes('profile picture') || altText.includes('profil')) {
     score += 4;
   }
 
-  if (ariaLabel.includes("profile picture") || ariaLabel.includes("profil")) {
+  if (ariaLabel.includes('profile picture') || ariaLabel.includes('profil')) {
     score += 3;
   }
 
@@ -327,11 +377,11 @@ function scoreFacebookPhotoCandidate(element, source) {
     score += 1;
   }
 
-  if (sourceText.startsWith("data:")) {
+  if (sourceText.startsWith('data:')) {
     score -= 4;
   }
 
-  if (sourceText.includes("/emoji.php") || sourceText.includes("safe_image")) {
+  if (sourceText.includes('/emoji.php') || sourceText.includes('safe_image')) {
     score -= 5;
   }
 
@@ -340,24 +390,24 @@ function scoreFacebookPhotoCandidate(element, source) {
 
 function getElementAltText(element) {
   if (element instanceof HTMLImageElement) {
-    return element.alt || "";
+    return element.alt || '';
   }
 
-  return "";
+  return '';
 }
 
 function getNearestLabel(element) {
   return (
-    element?.getAttribute?.("aria-label") ||
-    element?.closest?.("[aria-label]")?.getAttribute?.("aria-label") ||
-    ""
+    element?.getAttribute?.('aria-label') ||
+    element?.closest?.('[aria-label]')?.getAttribute?.('aria-label') ||
+    ''
   );
 }
 
 function extractSocialSignals(platform) {
-  const visibleText = document.body?.innerText || "";
+  const visibleText = document.body?.innerText || '';
   const lines = visibleText
-    .split("\n")
+    .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
 
@@ -365,15 +415,24 @@ function extractSocialSignals(platform) {
     friendsLabel: null,
     followersLabel: null,
     sharedServersLabel: null,
-    locationHints: extractLocationHints(lines)
+    locationHints: extractLocationHints(lines),
   };
 
-  if (platform === "facebook") {
-    signals.friendsLabel = findLine(lines, /\b(friend|friends|přátel|friend requests)\b/i);
-  } else if (platform === "instagram") {
-    signals.followersLabel = findLine(lines, /\b(follower|followers|sledujících|following)\b/i);
-  } else if (platform === "discord") {
-    signals.sharedServersLabel = findLine(lines, /\b(shared servers|mutual servers)\b/i);
+  if (platform === 'facebook') {
+    signals.friendsLabel = findLine(
+      lines,
+      /\b(friend|friends|přátel|friend requests)\b/i
+    );
+  } else if (platform === 'instagram') {
+    signals.followersLabel = findLine(
+      lines,
+      /\b(follower|followers|sledujících|following)\b/i
+    );
+  } else if (platform === 'discord') {
+    signals.sharedServersLabel = findLine(
+      lines,
+      /\b(shared servers|mutual servers)\b/i
+    );
   }
 
   return signals;
@@ -391,12 +450,20 @@ function extractLocationHints(lines) {
       break;
     }
 
-    if (/^[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\p{L}\- ]+,\s?[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\p{L}\- ]+$/u.test(line)) {
+    if (
+      /^[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\p{L}\- ]+,\s?[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\p{L}\- ]+$/u.test(
+        line
+      )
+    ) {
       hints.push(line);
       continue;
     }
 
-    if (/\b(Praha|Brno|Ostrava|Plzeň|Olomouc|Pardubice|Hradec Králové)\b/u.test(line)) {
+    if (
+      /\b(Praha|Brno|Ostrava|Plzeň|Olomouc|Pardubice|Hradec Králové)\b/u.test(
+        line
+      )
+    ) {
       hints.push(line);
     }
   }

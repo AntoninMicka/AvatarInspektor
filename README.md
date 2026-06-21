@@ -27,6 +27,12 @@ Vsechno zustava pouze lokalne v ulozisti rozsireni.
 2. Spust `npm run sync:vendor`
 3. Nacti extension jako unpacked / temporary addon
 
+## Kvalita kodu
+
+- `npm run lint` spusti ESLint nad JavaScriptem v projektu
+- `npm run format:check` overi formatovani pres Prettier
+- `npm run format` upravi format souboru podle konfigurace
+
 ## Build balicku pro Firefox
 
 1. Spust `npm install`

@@ -3,17 +3,9 @@
   "name": "Avatar Inspector",
   "version": "0.1.0",
   "description": "Local profile trust checklist with manual notes and profile-photo heuristics.",
-  "permissions": [
-    "contextMenus",
-    "storage",
-    "tabs",
-    "<all_urls>"
-  ],
+  "permissions": ["contextMenus", "storage", "tabs", "<all_urls>"],
   "background": {
-    "scripts": [
-      "vendor/exifr/full.umd.js",
-      "background.js"
-    ]
+    "scripts": ["vendor/exifr/full.umd.js", "background.js"]
   },
   "browser_action": {
     "default_title": "Avatar Inspector",
@@ -21,16 +13,10 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
-  "web_accessible_resources": [
-    "rules.json"
-  ]
+  "web_accessible_resources": ["rules.json"]
 }

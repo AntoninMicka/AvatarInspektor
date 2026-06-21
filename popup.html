@@ -26,11 +26,22 @@
         margin: 0;
         width: 420px;
         min-height: 640px;
-        font: 14px/1.5 Georgia, "Times New Roman", serif;
+        font:
+          14px/1.5 Georgia,
+          'Times New Roman',
+          serif;
         color: var(--text);
         background:
-          radial-gradient(circle at top left, rgba(154, 52, 18, 0.18), transparent 30%),
-          radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.12), transparent 32%),
+          radial-gradient(
+            circle at top left,
+            rgba(154, 52, 18, 0.18),
+            transparent 30%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(15, 118, 110, 0.12),
+            transparent 32%
+          ),
           linear-gradient(180deg, #fbf7f1 0%, var(--bg) 100%);
       }
 
@@ -116,19 +127,19 @@
         letter-spacing: 0.04em;
       }
 
-      .result-pill[data-tone="ok"] {
+      .result-pill[data-tone='ok'] {
         background: rgba(15, 118, 110, 0.12);
         border-color: rgba(15, 118, 110, 0.22);
         color: var(--ok);
       }
 
-      .result-pill[data-tone="warn"] {
+      .result-pill[data-tone='warn'] {
         background: rgba(180, 83, 9, 0.12);
         border-color: rgba(180, 83, 9, 0.24);
         color: #b45309;
       }
 
-      .result-pill[data-tone="danger"] {
+      .result-pill[data-tone='danger'] {
         background: rgba(185, 28, 28, 0.12);
         border-color: rgba(185, 28, 28, 0.22);
         color: var(--warn);
@@ -269,10 +280,14 @@
         <section class="hero">
           <div class="hero-meta">
             <span id="platformBadge" class="platform">generic</span>
-            <span id="resultBadge" class="result-pill" data-tone="neutral">Bez vysledku</span>
+            <span id="resultBadge" class="result-pill" data-tone="neutral"
+              >Bez vysledku</span
+            >
           </div>
           <div class="hero-result">
-            <p id="resultSummary" class="result-summary">Vysledek analyzy se zobrazi po zpracovani profilove fotky.</p>
+            <p id="resultSummary" class="result-summary">
+              Vysledek analyzy se zobrazi po zpracovani profilove fotky.
+            </p>
             <div class="result-stats">
               <div class="result-stat">
                 <strong id="resultScore">--</strong>
@@ -292,11 +307,14 @@
             <h1 id="profileName">Avatar Inspector</h1>
             <p id="profileId" class="subtle">unknown</p>
           </div>
-          <p class="subtle">Lokalni checklist duveryhodnosti profilu bez backendu.</p>
+          <p class="subtle">
+            Lokalni checklist duveryhodnosti profilu bez backendu.
+          </p>
         </section>
 
         <section id="unsupportedState" class="status subtle" hidden>
-          Aktivni stranka neni rozpoznana jako podporovany profil. Muze se zobrazit posledni ulozeny zaznam.
+          Aktivni stranka neni rozpoznana jako podporovany profil. Muze se
+          zobrazit posledni ulozeny zaznam.
         </section>
 
         <section id="emptyState" class="empty" hidden>
@@ -312,7 +330,9 @@
           </div>
 
           <div class="toolbar">
-            <button id="analyzePhotoButton" type="button">Analyzovat profilovou fotku</button>
+            <button id="analyzePhotoButton" type="button">
+              Analyzovat profilovou fotku
+            </button>
           </div>
 
           <div class="columns">
@@ -355,7 +375,10 @@
             <section class="panel stack">
               <div>
                 <h2>Poznamka</h2>
-                <textarea id="noteField" placeholder="Napriklad: odmitla videohovor, fotka z marketplace, protichudne informace..."></textarea>
+                <textarea
+                  id="noteField"
+                  placeholder="Napriklad: odmitla videohovor, fotka z marketplace, protichudne informace..."
+                ></textarea>
               </div>
               <button id="saveNoteButton" type="button">Ulozit poznamku</button>
             </section>

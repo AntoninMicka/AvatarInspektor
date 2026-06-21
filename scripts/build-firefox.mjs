@@ -1,23 +1,23 @@
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
-import path from "node:path";
-import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.resolve(__dirname, "..");
-const distDir = path.join(rootDir, "dist");
-const unpackedDir = path.join(distDir, "firefox");
-const artifactName = "AvatarInspector-firefox.xpi";
+const rootDir = path.resolve(__dirname, '..');
+const distDir = path.join(rootDir, 'dist');
+const unpackedDir = path.join(distDir, 'firefox');
+const artifactName = 'AvatarInspector-firefox.xpi';
 const artifactPath = path.join(distDir, artifactName);
 
 const filesToCopy = [
-  "manifest.json",
-  "background.js",
-  "content.js",
-  "popup.html",
-  "popup.js",
-  "rules.json",
-  "vendor/exifr/full.umd.js"
+  'manifest.json',
+  'background.js',
+  'content.js',
+  'popup.html',
+  'popup.js',
+  'rules.json',
+  'vendor/exifr/full.umd.js',
 ];
 
 for (const relativePath of filesToCopy) {
@@ -38,9 +38,9 @@ for (const relativePath of filesToCopy) {
   cpSync(sourcePath, targetPath, { recursive: true });
 }
 
-execFileSync("zip", ["-rq", artifactPath, "."], {
+execFileSync('zip', ['-rq', artifactPath, '.'], {
   cwd: unpackedDir,
-  stdio: "inherit"
+  stdio: 'inherit',
 });
 
 console.log(`Built ${path.relative(rootDir, artifactPath)}`);
