@@ -5,6 +5,10 @@ const profileView = document.getElementById("profileView");
 const unsupportedState = document.getElementById("unsupportedState");
 const platformBadge = document.getElementById("platformBadge");
 const resultBadge = document.getElementById("resultBadge");
+const resultSummary = document.getElementById("resultSummary");
+const resultScore = document.getElementById("resultScore");
+const resultNegatives = document.getElementById("resultNegatives");
+const resultUpdated = document.getElementById("resultUpdated");
 const profileName = document.getElementById("profileName");
 const profileId = document.getElementById("profileId");
 const profileSummary = document.getElementById("profileSummary");
@@ -131,7 +135,7 @@ function renderProfile(profile) {
   profileView.hidden = false;
 
   platformBadge.textContent = profile.platform;
-  renderResultBadge(profile.photoAnalysis?.verdict);
+  renderResultHeader(profile.assessment);
   profileName.textContent = profile.profileName || "Neznamy profil";
   profileId.textContent = profile.profileId || "unknown";
   profileSummary.textContent = buildProfileSummary(profile);
@@ -241,6 +245,16 @@ function renderResultBadge(verdict) {
   resultBadge.dataset.tone = config.tone;
 }
 
+function renderResultHeader(assessment) {
+  renderResultBadge(assessment?.verdict);
+  resultSummary.textContent = assessment?.summary || "Vysledek analyzy se zobrazi po zpracovani profilove fotky.";
+  resultScore.textContent = typeof assessment?.score === "number" ? formatScore(assessment.score) : "--";
+  resultNegatives.textContent = String(assessment?.scoring?.negative || 0);
+  resultUpdated.textContent = currentProfile?.updatedAt
+    ? formatShortDate(currentProfile.updatedAt)
+    : "Zatim";
+}
+
 function getResultBadgeConfig(verdict) {
   if (verdict === "Bez zjevnych problemu") {
     return {
@@ -267,6 +281,22 @@ function getResultBadgeConfig(verdict) {
     label: "Bez vysledku",
     tone: "neutral"
   };
+}
+
+function formatScore(value) {
+  if (value > 0) {
+    return `+${value}`;
+  }
+
+  return String(value);
+}
+
+function formatShortDate(value) {
+  const date = new Date(value);
+  return date.toLocaleDateString("cs-CZ", {
+    day: "2-digit",
+    month: "2-digit"
+  });
 }
 
 function formatUrl(value) {

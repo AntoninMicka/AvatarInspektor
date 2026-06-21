@@ -83,6 +83,15 @@
         align-items: center;
       }
 
+      .hero-result {
+        display: grid;
+        gap: 8px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(216, 198, 176, 0.9);
+      }
+
       .platform {
         display: inline-flex;
         width: fit-content;
@@ -123,6 +132,41 @@
         background: rgba(185, 28, 28, 0.12);
         border-color: rgba(185, 28, 28, 0.22);
         color: var(--warn);
+      }
+
+      .result-summary {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .result-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .result-stat {
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(216, 198, 176, 0.9);
+      }
+
+      .result-stat strong,
+      .result-stat span {
+        display: block;
+      }
+
+      .result-stat strong {
+        font-size: 15px;
+      }
+
+      .result-stat span {
+        margin-top: 2px;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
 
       .status {
@@ -226,6 +270,23 @@
           <div class="hero-meta">
             <span id="platformBadge" class="platform">generic</span>
             <span id="resultBadge" class="result-pill" data-tone="neutral">Bez vysledku</span>
+          </div>
+          <div class="hero-result">
+            <p id="resultSummary" class="result-summary">Vysledek analyzy se zobrazi po zpracovani profilove fotky.</p>
+            <div class="result-stats">
+              <div class="result-stat">
+                <strong id="resultScore">--</strong>
+                <span>Skore</span>
+              </div>
+              <div class="result-stat">
+                <strong id="resultNegatives">0</strong>
+                <span>Negativni signaly</span>
+              </div>
+              <div class="result-stat">
+                <strong id="resultUpdated">Zatim</strong>
+                <span>Posledni analyza</span>
+              </div>
+            </div>
           </div>
           <div>
             <h1 id="profileName">Avatar Inspector</h1>

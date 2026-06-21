@@ -22,6 +22,29 @@ const manualCheckDefinitions = [
   { key: "geo_inconsistency_observed", category: "social", label: "Nizka geograficka konzistence" }
 ];
 
+const assessmentRuleDefinitions = {
+  video_call_verified: { severity: "positive", weight: 1.5, reason: "Videohovor byl potvrzen." },
+  voice_call_verified: { severity: "positive", weight: 1, reason: "Hlasovy kontakt probiha konzistentne." },
+  real_life_meeting: { severity: "positive", weight: 2, reason: "Probehl osobni kontakt." },
+  identity_verified: { severity: "positive", weight: 2, reason: "Identita byla overena." },
+  refuses_video_call: { severity: "negative", weight: 1.5, reason: "Profil odmitl videohovor." },
+  avoids_specific_answers: { severity: "negative", weight: 1, reason: "Objevuje se vyhybani konkretnim odpovedim." },
+  contradictory_information: { severity: "negative", weight: 1.5, reason: "Byly zaznamenany protichudne informace." },
+  rapid_intimacy: { severity: "negative", weight: 1, reason: "Interakce tlaci na rychlou intimitu." },
+  requests_photos: { severity: "negative", weight: 1, reason: "Profil opakovane zada fotografie." },
+  explicit_content_sent: { severity: "negative", weight: 1.5, reason: "Byl zaslan explicitni obsah." },
+  financial_requests: { severity: "negative", weight: 2, reason: "Objevily se financni pozadavky." },
+  geo_inconsistency_observed: { severity: "negative", weight: 1.5, reason: "Geograficke stopy si odporuji." },
+  profile_name_detected: { severity: "positive", weight: 0.5, reason: "Jmeno profilu je rozpoznane." },
+  profile_photo_detected: { severity: "positive", weight: 0.5, reason: "Profilova fotka byla nalezena." },
+  account_history_detected: { severity: "positive", weight: 0.5, reason: "Stranka vypada jako skutecny profil." },
+  social_graph_available: { severity: "positive", weight: 0.5, reason: "Jsou videt socialni vazby nebo dosah." },
+  location_hints_detected: { severity: "positive", weight: 0.25, reason: "Byly zachyceny geograficke stopy." },
+  photo_metadata_present: { severity: "positive", weight: 0.5, reason: "Fotka nese pouzitelna metadata." },
+  photo_low_resolution: { severity: "negative", weight: 0.75, reason: "Profilova fotka ma nizke rozliseni." },
+  photo_external_source: { severity: "negative", weight: 1, reason: "Fotka pusobi jako externi nebo komercni asset." }
+};
+
 extensionApi.runtime.onInstalled.addListener(async () => {
   await ensureContextMenu();
   await actionApi.setBadgeText({ text: "" });
@@ -188,15 +211,15 @@ async function getLastProfile() {
   const stored = await extensionApi.storage.local.get([PROFILE_STORAGE_KEY, LAST_PROFILE_KEY]);
   const profiles = stored[PROFILE_STORAGE_KEY] || {};
   const profileKey = stored[LAST_PROFILE_KEY];
-  return profileKey ? profiles[profileKey] || null : null;
+  const profile = profileKey ? profiles[profileKey] || null : null;
+  return profile ? finalizeProfileRecord(profile) : null;
 }
 
 function createProfileRecord(profileContext, pageUrl) {
   const timestamp = new Date().toISOString();
   const key = buildProfileKey(profileContext);
   const automaticChecks = buildAutomaticChecks(profileContext, null);
-
-  return {
+  return finalizeProfileRecord({
     key,
     platform: profileContext?.platform || "generic",
     profileId: profileContext?.profileId || "unknown",
@@ -209,13 +232,12 @@ function createProfileRecord(profileContext, pageUrl) {
     photoAnalysis: null,
     createdAt: timestamp,
     updatedAt: timestamp
-  };
+  });
 }
 
 function enrichProfileRecord(record, profileContext, pageUrl) {
   const automaticChecks = buildAutomaticChecks(profileContext, record.photoAnalysis);
-
-  return {
+  return finalizeProfileRecord({
     ...record,
     platform: profileContext?.platform || record.platform,
     profileId: profileContext?.profileId || record.profileId,
@@ -227,7 +249,7 @@ function enrichProfileRecord(record, profileContext, pageUrl) {
     },
     socialGraph: buildSocialGraph(profileContext?.socialSignals, record.socialGraph),
     updatedAt: new Date().toISOString()
-  };
+  });
 }
 
 function buildProfileKey(profileContext) {
@@ -284,7 +306,7 @@ function buildSocialGraph(socialSignals, currentGraph = {}) {
 }
 
 function mergePhotoAnalysis(record, analysis, srcUrl) {
-  return {
+  return finalizeProfileRecord({
     ...record,
     photoAnalysis: {
       ...analysis,
@@ -304,7 +326,7 @@ function mergePhotoAnalysis(record, analysis, srcUrl) {
       )
     },
     updatedAt: new Date().toISOString()
-  };
+  });
 }
 
 async function updateProfile(profileKey, patch) {
@@ -316,15 +338,170 @@ async function updateProfile(profileKey, patch) {
     throw new Error("Profil se nepodarilo najit.");
   }
 
-  const updated = {
+  const updated = finalizeProfileRecord({
     ...current,
     notes: typeof patch?.notes === "string" ? patch.notes : current.notes,
     manualChecks: patch?.manualChecks ? { ...current.manualChecks, ...patch.manualChecks } : current.manualChecks,
     updatedAt: new Date().toISOString()
-  };
+  });
 
   await upsertProfile(updated);
+  await updateBadgeFromProfile(updated);
   return updated;
+}
+
+function finalizeProfileRecord(profile) {
+  return {
+    ...profile,
+    assessment: buildProfileAssessment(profile)
+  };
+}
+
+function buildProfileAssessment(profile) {
+  const contributors = [];
+
+  for (const [key, value] of Object.entries(profile.manualChecks || {})) {
+    if (!value) {
+      continue;
+    }
+
+    const definition = getCheckDefinition(key);
+    const rule = assessmentRuleDefinitions[key];
+    if (!definition || !rule) {
+      continue;
+    }
+
+    contributors.push({
+      key,
+      label: definition.label,
+      severity: rule.severity,
+      weight: rule.weight,
+      reason: rule.reason,
+      source: "manual"
+    });
+  }
+
+  for (const [key, value] of Object.entries(profile.automaticChecks || {})) {
+    if (!value) {
+      continue;
+    }
+
+    const rule = assessmentRuleDefinitions[key];
+    if (!rule) {
+      continue;
+    }
+
+    contributors.push({
+      key,
+      label: formatCheckLabel(key),
+      severity: rule.severity,
+      weight: rule.weight,
+      reason: rule.reason,
+      source: "automatic"
+    });
+  }
+
+  if (profile.photoAnalysis?.verdict === "Vyrazne nesrovnalosti") {
+    contributors.push({
+      key: "photo_verdict",
+      label: "Analyza fotky",
+      severity: "negative",
+      weight: 1.5,
+      reason: profile.photoAnalysis.summary || "Fotka ukazuje vyrazne nesrovnalosti.",
+      source: "photo"
+    });
+  } else if (profile.photoAnalysis?.verdict === "Vyzaduje pozornost") {
+    contributors.push({
+      key: "photo_verdict",
+      label: "Analyza fotky",
+      severity: "negative",
+      weight: 0.75,
+      reason: profile.photoAnalysis.summary || "Fotka vyzaduje pozornost.",
+      source: "photo"
+    });
+  } else if (profile.photoAnalysis?.verdict === "Bez zjevnych problemu") {
+    contributors.push({
+      key: "photo_verdict",
+      label: "Analyza fotky",
+      severity: "positive",
+      weight: 0.5,
+      reason: profile.photoAnalysis.summary || "Fotka nema zjevne problemove znaky.",
+      source: "photo"
+    });
+  }
+
+  const scoring = contributors.reduce(
+    (accumulator, contributor) => {
+      if (contributor.severity === "negative") {
+        accumulator.negative += 1;
+        accumulator.negativeWeight += contributor.weight;
+      } else if (contributor.severity === "positive") {
+        accumulator.positive += 1;
+        accumulator.positiveWeight += contributor.weight;
+      } else {
+        accumulator.neutral += 1;
+      }
+
+      return accumulator;
+    },
+    { positive: 0, negative: 0, neutral: 0, positiveWeight: 0, negativeWeight: 0 }
+  );
+
+  const score = roundScore(scoring.positiveWeight - scoring.negativeWeight);
+  let verdict = "Bez zjevnych problemu";
+
+  if (scoring.negativeWeight >= 3 || score <= -2) {
+    verdict = "Vyrazne nesrovnalosti";
+  } else if (scoring.negativeWeight >= 1 || score < 0) {
+    verdict = "Vyzaduje pozornost";
+  }
+
+  return {
+    verdict,
+    score,
+    scoring,
+    contributors,
+    summary: buildAssessmentSummary(contributors, verdict)
+  };
+}
+
+function buildAssessmentSummary(contributors, verdict) {
+  if (contributors.length === 0) {
+    return "Zatim nejsou k dispozici signaly pro celkove hodnoceni.";
+  }
+
+  const primaryNegative = contributors
+    .filter((contributor) => contributor.severity === "negative")
+    .sort((left, right) => right.weight - left.weight)[0];
+
+  if (primaryNegative) {
+    return primaryNegative.reason;
+  }
+
+  const primaryPositive = contributors
+    .filter((contributor) => contributor.severity === "positive")
+    .sort((left, right) => right.weight - left.weight)[0];
+
+  if (primaryPositive) {
+    return primaryPositive.reason;
+  }
+
+  return `Aktualni stav: ${verdict}.`;
+}
+
+function getCheckDefinition(key) {
+  return manualCheckDefinitions.find((definition) => definition.key === key) || null;
+}
+
+function formatCheckLabel(key) {
+  return key
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function roundScore(value) {
+  return Math.round(value * 100) / 100;
 }
 
 async function upsertProfile(profile) {
@@ -652,7 +829,7 @@ async function loadRules() {
 }
 
 async function updateBadgeFromProfile(profile) {
-  const verdict = profile?.photoAnalysis?.verdict;
+  const verdict = profile?.assessment?.verdict;
   let text = "NOTE";
   let color = "#6b7280";
 
