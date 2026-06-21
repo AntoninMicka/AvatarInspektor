@@ -21,15 +21,6 @@
   },
   "sources": [
     {
-      "key": "facebook_cdn",
-      "label": "Facebook CDN",
-      "severity": "negative",
-      "weight": 0.5,
-      "reason": "Image URL matches a Facebook delivery host.",
-      "hosts": ["fbcdn.net", "facebook.com"],
-      "pathFragments": ["fbcdn"]
-    },
-    {
       "key": "instagram_cdn",
       "label": "Instagram CDN",
       "severity": "negative",
