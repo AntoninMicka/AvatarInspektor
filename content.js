@@ -196,9 +196,16 @@ function extractProfilePhoto(platform) {
   const selectorsByPlatform = {
     facebook: [
       'meta[property="og:image"]',
+      'image[href]',
       'image[xlink\\:href]',
+      'a[aria-label*="profile picture" i] img',
+      'a[aria-label*="profil" i] img',
+      '[role="main"] image[href]',
+      '[role="main"] image[xlink\\:href]',
       'img[alt*="profile picture" i]',
-      'img[alt*="profil" i]'
+      'img[alt*="profil" i]',
+      'img[src*="scontent" i]',
+      'img[src*="fbcdn" i]'
     ],
     instagram: [
       'meta[property="og:image"]',
@@ -212,34 +219,139 @@ function extractProfilePhoto(platform) {
 
   const selectors = selectorsByPlatform[platform] || ['meta[property="og:image"]', "img"];
 
+  if (platform === "facebook") {
+    return extractFacebookProfilePhoto(selectors);
+  }
+
   for (const selector of selectors) {
     const element = document.querySelector(selector);
-    if (!element) {
-      continue;
-    }
-
-    if (element instanceof HTMLMetaElement) {
-      const content = element.getAttribute("content");
-      if (content) {
-        return content;
-      }
-      continue;
-    }
-
-    if (element instanceof SVGImageElement) {
-      const href = element.getAttribute("href") || element.getAttribute("xlink:href");
-      if (href) {
-        return href;
-      }
-      continue;
-    }
-
-    if (element instanceof HTMLImageElement && (element.currentSrc || element.src)) {
-      return element.currentSrc || element.src;
+    const source = getElementImageSource(element);
+    if (source) {
+      return source;
     }
   }
 
   return null;
+}
+
+function extractFacebookProfilePhoto(selectors) {
+  const headImage = document.querySelector('meta[property="og:image"], meta[name="twitter:image"]')?.getAttribute("content");
+  if (headImage && !headImage.startsWith("data:")) {
+    return headImage;
+  }
+
+  const candidates = [];
+
+  for (const selector of selectors) {
+    const elements = document.querySelectorAll(selector);
+    for (const element of elements) {
+      const source = getElementImageSource(element);
+      if (!source) {
+        continue;
+      }
+
+      candidates.push({
+        source,
+        score: scoreFacebookPhotoCandidate(element, source)
+      });
+    }
+  }
+
+  const bestCandidate = candidates
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => right.score - left.score)[0];
+
+  return bestCandidate?.source || null;
+}
+
+function getElementImageSource(element) {
+  if (!element) {
+    return null;
+  }
+
+  if (element instanceof HTMLMetaElement) {
+    return element.getAttribute("content") || null;
+  }
+
+  if (element instanceof SVGImageElement) {
+    return element.getAttribute("href") || element.getAttribute("xlink:href") || null;
+  }
+
+  if (element instanceof HTMLImageElement) {
+    return element.currentSrc || element.src || null;
+  }
+
+  return null;
+}
+
+function scoreFacebookPhotoCandidate(element, source) {
+  let score = 0;
+  const sourceText = source.toLowerCase();
+  const altText = getElementAltText(element).toLowerCase();
+  const ariaLabel = getNearestLabel(element).toLowerCase();
+  const rect = typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
+  const width = element instanceof HTMLImageElement ? element.naturalWidth || element.clientWidth || 0 : rect?.width || 0;
+  const height = element instanceof HTMLImageElement ? element.naturalHeight || element.clientHeight || 0 : rect?.height || 0;
+  const shortEdge = Math.min(width || 0, height || 0);
+  const aspectDelta = width && height ? Math.abs(width - height) / Math.max(width, height) : 1;
+
+  if (sourceText.includes("fbcdn") || sourceText.includes("scontent")) {
+    score += 2;
+  }
+
+  if (sourceText.includes("profile") || sourceText.includes("profile_pic")) {
+    score += 2;
+  }
+
+  if (altText.includes("profile picture") || altText.includes("profil")) {
+    score += 4;
+  }
+
+  if (ariaLabel.includes("profile picture") || ariaLabel.includes("profil")) {
+    score += 3;
+  }
+
+  if (shortEdge >= 96) {
+    score += 1;
+  }
+
+  if (shortEdge >= 160) {
+    score += 1;
+  }
+
+  if (aspectDelta <= 0.12) {
+    score += 1;
+  }
+
+  if (element.closest('a[href*="photo"]') || element.closest('[role="main"]')) {
+    score += 1;
+  }
+
+  if (sourceText.startsWith("data:")) {
+    score -= 4;
+  }
+
+  if (sourceText.includes("/emoji.php") || sourceText.includes("safe_image")) {
+    score -= 5;
+  }
+
+  return score;
+}
+
+function getElementAltText(element) {
+  if (element instanceof HTMLImageElement) {
+    return element.alt || "";
+  }
+
+  return "";
+}
+
+function getNearestLabel(element) {
+  return (
+    element?.getAttribute?.("aria-label") ||
+    element?.closest?.("[aria-label]")?.getAttribute?.("aria-label") ||
+    ""
+  );
 }
 
 function extractSocialSignals(platform) {

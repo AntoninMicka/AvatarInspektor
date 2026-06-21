@@ -41,7 +41,11 @@ const sections = {
     { key: "profile_photo_analyzed", label: "Profilova fotka analyzovana", source: "automatic" },
     { key: "photo_low_resolution", label: "Nizke rozliseni", source: "automatic", negative: true },
     { key: "photo_external_source", label: "Externi nebo komercni zdroj", source: "automatic", negative: true },
-    { key: "photo_metadata_present", label: "Metadata pritomna", source: "automatic" }
+    { key: "photo_metadata_present", label: "Metadata pritomna", source: "automatic" },
+    { key: "photo_screenshot_like", label: "Pripomina screenshot", source: "automatic", negative: true },
+    { key: "photo_heavily_compressed", label: "Silne komprimovana fotka", source: "automatic", negative: true },
+    { key: "photo_copyright_metadata", label: "Autorska metadata", source: "automatic", negative: true },
+    { key: "photo_avatar_crop_like", label: "Rozmery jako avatar", source: "automatic" }
   ],
   social: [
     { key: "social_graph_available", label: "Socialni vazby zachyceny", source: "automatic" },

@@ -3,7 +3,21 @@
     "lowResolution": {
       "maxShortEdge": 320
     },
-    "squareTolerance": 12
+    "squareTolerance": 12,
+    "avatarLike": {
+      "minShortEdge": 160,
+      "maxShortEdge": 900,
+      "maxAspectDelta": 0.08
+    },
+    "screenshotLike": {
+      "minShortEdge": 900,
+      "aspectRatios": [1.33, 1.6, 1.67, 1.78, 2, 2.17],
+      "tolerance": 0.09
+    },
+    "compression": {
+      "minPixels": 90000,
+      "maxBytesPerPixel": 0.12
+    }
   },
   "sources": [
     {
@@ -41,6 +55,15 @@
       "reason": "Image URL matches Pinterest hosting.",
       "hosts": ["pinimg.com", "pinterest.com"],
       "pathFragments": ["originals", "736x"]
+    },
+    {
+      "key": "stock_photo_asset",
+      "label": "Stock photo asset",
+      "severity": "negative",
+      "weight": 1.5,
+      "reason": "Image URL matches a common stock-photo or asset host.",
+      "hosts": ["unsplash.com", "images.unsplash.com", "pexels.com", "pixabay.com", "shutterstock.com"],
+      "pathFragments": ["photo-", "/photos/", "/vectors/", "/illustrations/"]
     }
   ]
 }

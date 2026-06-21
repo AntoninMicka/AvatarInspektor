@@ -42,7 +42,11 @@ const assessmentRuleDefinitions = {
   location_hints_detected: { severity: "positive", weight: 0.25, reason: "Byly zachyceny geograficke stopy." },
   photo_metadata_present: { severity: "positive", weight: 0.5, reason: "Fotka nese pouzitelna metadata." },
   photo_low_resolution: { severity: "negative", weight: 0.75, reason: "Profilova fotka ma nizke rozliseni." },
-  photo_external_source: { severity: "negative", weight: 1, reason: "Fotka pusobi jako externi nebo komercni asset." }
+  photo_external_source: { severity: "negative", weight: 1, reason: "Fotka pusobi jako externi nebo komercni asset." },
+  photo_screenshot_like: { severity: "negative", weight: 1.25, reason: "Rozmery nebo nazev vypadaji jako screenshot." },
+  photo_heavily_compressed: { severity: "negative", weight: 1, reason: "Fotka vypada jako silne komprimovany export nebo thumbnail." },
+  photo_copyright_metadata: { severity: "negative", weight: 1.25, reason: "Fotka obsahuje copyright nebo autorske metadata." },
+  photo_avatar_crop_like: { severity: "positive", weight: 0.5, reason: "Rozmery pripominaji bezny avatar crop." }
 };
 
 extensionApi.runtime.onInstalled.addListener(async () => {
@@ -288,6 +292,10 @@ function buildAutomaticChecks(profileContext, photoAnalysis) {
     photo_low_resolution: indicators.some((indicator) => indicator.key === "low_resolution"),
     photo_external_source: indicators.some((indicator) => indicator.key.endsWith("_cdn") || indicator.key.endsWith("_asset")),
     photo_metadata_present: indicators.some((indicator) => indicator.key === "camera_model_present" || indicator.key === "date_taken_present"),
+    photo_screenshot_like: indicators.some((indicator) => indicator.key === "screenshot_like"),
+    photo_heavily_compressed: indicators.some((indicator) => indicator.key === "high_compression"),
+    photo_copyright_metadata: indicators.some((indicator) => indicator.key === "copyright_present"),
+    photo_avatar_crop_like: indicators.some((indicator) => indicator.key === "avatar_crop_like"),
     profile_name_detected: Boolean(profileContext?.profileName),
     profile_photo_detected: Boolean(profileContext?.profileImage),
     account_history_detected: Boolean(profileContext?.pageType === "profile"),
@@ -539,17 +547,21 @@ async function analyzeImage(srcUrl, domContext) {
   const imageInfo = await inspectImage(srcUrl);
   const sourceMatches = matchSourceRules(url, rules.sources);
   indicators.push(...sourceMatches);
+  indicators.push(...buildUrlTextIndicators(url, domContext));
 
   if (imageInfo.dimensions) {
     const { width, height } = imageInfo.dimensions;
+    const shortEdge = Math.min(width, height);
+    const longEdge = Math.max(width, height);
+    const aspectRatio = longEdge / shortEdge;
 
-    if (Math.min(width, height) <= rules.thresholds.lowResolution.maxShortEdge) {
+    if (shortEdge <= rules.thresholds.lowResolution.maxShortEdge) {
       indicators.push({
         key: "low_resolution",
         label: "Low resolution",
         severity: "negative",
         weight: 1,
-        reason: `Short edge is ${Math.min(width, height)} px.`
+        reason: `Short edge is ${shortEdge} px.`
       });
     }
 
@@ -560,6 +572,36 @@ async function analyzeImage(srcUrl, domContext) {
         severity: "neutral",
         weight: 0,
         reason: `Dimensions ${width}x${height} resemble a profile image crop.`
+      });
+    }
+
+    if (isAvatarLikeDimensions(shortEdge, aspectRatio, rules.thresholds.avatarLike)) {
+      indicators.push({
+        key: "avatar_crop_like",
+        label: "Avatar-like dimensions",
+        severity: "positive",
+        weight: 0.5,
+        reason: `Dimensions ${width}x${height} fit a typical avatar crop.`
+      });
+    }
+
+    if (isScreenshotLikeDimensions(shortEdge, aspectRatio, rules.thresholds.screenshotLike)) {
+      indicators.push({
+        key: "screenshot_like",
+        label: "Screenshot-like dimensions",
+        severity: "negative",
+        weight: 1.25,
+        reason: `Dimensions ${width}x${height} resemble a screen capture ratio.`
+      });
+    }
+
+    if (isHighlyCompressedImage(imageInfo.fileSize, width, height, rules.thresholds.compression)) {
+      indicators.push({
+        key: "high_compression",
+        label: "Highly compressed image",
+        severity: "negative",
+        weight: 1,
+        reason: `File size ${formatKilobytes(imageInfo.fileSize)} KB is very low for ${width}x${height}.`
       });
     }
   } else if (imageInfo.error) {
@@ -736,7 +778,11 @@ function buildSummary(indicators, warnings) {
     return "Zatim nebyly nalezeny vyrazne signaly.";
   }
 
-  const topIndicator = indicators[0];
+  const topIndicator = [...indicators].sort((left, right) => {
+    const leftWeight = left.weight ?? getDefaultWeight(left.severity);
+    const rightWeight = right.weight ?? getDefaultWeight(right.severity);
+    return rightWeight - leftWeight;
+  })[0];
   if (topIndicator) {
     return `${topIndicator.label}: ${topIndicator.reason}`;
   }
@@ -800,6 +846,58 @@ function buildMetadataIndicators(metadata) {
   }
 
   return indicators;
+}
+
+function buildUrlTextIndicators(url, domContext) {
+  const indicators = [];
+  const screenshotKeywordPattern = /\b(screenshot|screen-shot|screen_shot|snip|capture|screen capture)\b/i;
+  const textBlob = [url.pathname, url.search, domContext?.alt, domContext?.title].filter(Boolean).join(" ");
+
+  if (screenshotKeywordPattern.test(textBlob)) {
+    indicators.push({
+      key: "screenshot_like",
+      label: "Screenshot-like naming",
+      severity: "negative",
+      weight: 1,
+      reason: "Nazev souboru nebo okoli obrazku pripomina screenshot."
+    });
+  }
+
+  return indicators;
+}
+
+function isAvatarLikeDimensions(shortEdge, aspectRatio, threshold) {
+  return (
+    shortEdge >= threshold.minShortEdge &&
+    shortEdge <= threshold.maxShortEdge &&
+    Math.abs(aspectRatio - 1) <= threshold.maxAspectDelta
+  );
+}
+
+function isScreenshotLikeDimensions(shortEdge, aspectRatio, threshold) {
+  if (shortEdge < threshold.minShortEdge) {
+    return false;
+  }
+
+  return threshold.aspectRatios.some((ratio) => Math.abs(aspectRatio - ratio) <= threshold.tolerance);
+}
+
+function isHighlyCompressedImage(fileSize, width, height, threshold) {
+  if (!fileSize || !width || !height) {
+    return false;
+  }
+
+  const pixels = width * height;
+  if (pixels < threshold.minPixels) {
+    return false;
+  }
+
+  const bytesPerPixel = fileSize / pixels;
+  return bytesPerPixel <= threshold.maxBytesPerPixel;
+}
+
+function formatKilobytes(bytes) {
+  return Math.round(bytes / 1024);
 }
 
 function normalizeDate(value) {
